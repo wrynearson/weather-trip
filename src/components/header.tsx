@@ -65,21 +65,40 @@ export function Header() {
                   <span className="sr-only">About</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-[420px]">
+              <DialogContent className="sm:max-w-[420px]">
                 <DialogHeader>
-                  <DialogTitle>About these figures</DialogTitle>
+                  <DialogTitle>About</DialogTitle>
                 </DialogHeader>
                 <DialogDescription
                   render={<div className="space-y-2.5" />}
                 >
                   <p>
-                    Figures are long-run historical averages for each stop's date range, not a
-                    forecast. Typical high/low reflect the usual range for that time of year;
-                    recent stops closer in time may blend in short-range forecast data.
+                    Trip Weather Planner helps you see typical weather across every stop on a
+                    multi-city trip at a glance, so you can pack and plan around what to expect.
                   </p>
                   <p>
-                    Your trip is saved in this browser only — it isn't synced or shared anywhere
-                    else.
+                    Stops within 15 days use a live short-range forecast. Stops further out show
+                    30-year historical averages for that date range instead, since forecasts
+                    aren't reliable that far ahead — each stop's card is labeled with which one
+                    it's showing.
+                  </p>
+                  <p>
+                    Weather data comes from{' '}
+                    <a href="https://open-meteo.com" target="_blank" rel="noreferrer">
+                      Open-Meteo
+                    </a>{' '}
+                    (forecast and 30-year historical archive); locations are looked up via{' '}
+                    <a
+                      href="https://nominatim.openstreetmap.org"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      OpenStreetMap Nominatim
+                    </a>
+                    .
+                  </p>
+                  <p>
+                    Your trip is saved in this browser only.
                   </p>
                 </DialogDescription>
               </DialogContent>
