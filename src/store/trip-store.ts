@@ -20,7 +20,7 @@ export const useTripStore = create<TripState>()(
     (set) => ({
       stops: [],
       dayStats: {},
-      units: 'F',
+      units: 'C',
 
       addStop: () => {
         const id = crypto.randomUUID()
