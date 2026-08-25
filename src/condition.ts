@@ -66,3 +66,19 @@ export const TRIP_BADGE_LABEL: Record<TripBadge, string> = {
   mixed: 'Mixed conditions',
   rainy: 'Mostly rainy',
 }
+
+/**
+ * Classify a single stop's overall condition by averaging its nights into
+ * one pseudo-day, then running the same threshold logic as classifyDay.
+ */
+export function classifyStopCondition(days: DayStats[]): Condition {
+  if (days.length === 0) {
+    return 'sunny'
+  }
+
+  const avgHigh = days.reduce((sum, day) => sum + day.avgHigh, 0) / days.length
+  const wetDayProbability =
+    days.reduce((sum, day) => sum + day.wetDayProbability, 0) / days.length
+
+  return classifyDay({ ...days[0], avgHigh, wetDayProbability })
+}

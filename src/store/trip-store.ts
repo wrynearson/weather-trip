@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { DayStats, Stop, Units } from '@/types'
 
-type DayStatsState = DayStats[] | 'loading' | 'error'
+export type DayStatsState = DayStats[] | 'loading' | 'error'
 
 type TripState = {
   stops: Stop[]
@@ -12,6 +12,7 @@ type TripState = {
   updateStop: (id: string, patch: Partial<Omit<Stop, 'id'>>) => void
   removeStop: (id: string) => void
   setUnits: (units: Units) => void
+  setDayStats: (id: string, state: DayStatsState) => void
   clearTrip: () => void
 }
 
@@ -56,6 +57,10 @@ export const useTripStore = create<TripState>()(
       },
 
       setUnits: (units) => set({ units }),
+
+      setDayStats: (id, state) => {
+        set((prev) => ({ dayStats: { ...prev.dayStats, [id]: state } }))
+      },
 
       clearTrip: () => set({ stops: [], dayStats: {} }),
     }),

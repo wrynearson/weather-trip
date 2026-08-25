@@ -85,7 +85,7 @@ function nearestIndex(series: DailySeries, date: string): number {
   return bestIndex
 }
 
-function daysUntil(date: string): number {
+export function daysUntil(date: string): number {
   const today = new Date()
   const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
   const [year, month, day] = date.split('-').map(Number)
