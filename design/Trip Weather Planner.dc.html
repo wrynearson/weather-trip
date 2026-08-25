@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #F7F4EF; }
+  * { box-sizing: border-box; }
+  a { color: #3F6B5C; text-decoration: none; }
+  a:hover { color: #2F5245; text-decoration: underline; }
+  input, button { font-family: inherit; }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  @keyframes riseIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+</style>
+</helmet>
+<div style="min-height:100vh;background:#F7F4EF;color:#1B1917;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased">
+  <div style="max-width:780px;margin:0 auto;padding:36px 20px 96px">
+
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+      <div>
+        <div style="font-size:22px;font-weight:600;letter-spacing:-0.015em;line-height:1.1">Trip weather</div>
+        <div style="font-size:13.5px;color:#6F6862;margin-top:5px;max-width:44ch;text-wrap:pretty">What to expect based on historical weather for each stop's date range</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;padding:2px;background:#EDE8E0;border-radius:8px">
+          <sc-if value="{{ isC }}" hint-placeholder-val="{{ false }}">
+            <button type="button" onClick="{{ onSetC }}" style="padding:5px 11px;border:0;border-radius:6px;background:#FFFFFF;color:#1B1917;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(28,25,23,.10)">°C</button>
+            <button type="button" onClick="{{ onSetF }}" style="padding:5px 11px;border:0;border-radius:6px;background:transparent;color:#7C756D;font-size:12.5px;font-weight:500;cursor:pointer" style-hover="color:#1B1917">°F</button>
+          </sc-if>
+          <sc-if value="{{ isF }}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{ onSetC }}" style="padding:5px 11px;border:0;border-radius:6px;background:transparent;color:#7C756D;font-size:12.5px;font-weight:500;cursor:pointer" style-hover="color:#1B1917">°C</button>
+            <button type="button" onClick="{{ onSetF }}" style="padding:5px 11px;border:0;border-radius:6px;background:#FFFFFF;color:#1B1917;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:0 1px 2px rgba(28,25,23,.10)">°F</button>
+          </sc-if>
+        </div>
+        <sc-if value="{{ showClear }}" hint-placeholder-val="{{ false }}">
+          <button type="button" onClick="{{ onClear }}" style="padding:5px 2px;border:0;background:transparent;color:#8A837B;font-size:12.5px;cursor:pointer;text-decoration:underline;text-underline-offset:3px" style-hover="color:#1B1917">Clear trip</button>
+        </sc-if>
+        <button type="button" onClick="{{ onOpenAbout }}" aria-label="About" style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:1px solid #DFD9CF;border-radius:999px;background:#FFFFFF;color:#7C756D;font-size:12.5px;font-weight:600;font-style:italic;font-family:Georgia,serif;cursor:pointer" style-hover="color:#1B1917;border-color:#C9C2B8">i</button>
+
+      </div>
+    </div>
+
+    <sc-if value="{{ hasSummary }}" hint-placeholder-val="{{ true }}">
+      <div style="position:sticky;top:12px;z-index:30;background:#FFFFFF;border:1px solid #DFD9CF;border-radius:12px;padding:16px 20px 17px;margin-bottom:20px;box-shadow:0 6px 20px rgba(28,25,23,.07)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:flex-start;gap:22px;flex-wrap:wrap">
+            <sc-if value="{{ isSunny }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#F2EFE2;color:#7A6A2E;font-size:12.5px;font-weight:600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="#C79A3B" /><g stroke="#C79A3B" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="23" /><line x1="1" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="23" y2="12" /></g></svg>
+                Generally sunny
+              </div>
+            </sc-if>
+            <sc-if value="{{ isMixed }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#EDEFF0;color:#575049;font-size:12.5px;font-weight:600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><g fill="#9B948A"><circle cx="9" cy="12" r="4.2" /><circle cx="14.5" cy="10" r="5.2" /><rect x="5" y="13" width="15" height="6.5" rx="3.25" /></g></svg>
+                Mixed conditions
+              </div>
+            </sc-if>
+            <sc-if value="{{ isRainy }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;background:#E9EEF2;color:#33566B;font-size:12.5px;font-weight:600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><g fill="#8FA6AE"><circle cx="9" cy="9" r="3.8" /><circle cx="14" cy="7.5" r="4.6" /><rect x="5" y="10" width="14" height="5.5" rx="2.75" /></g><g stroke="#4E7E99" stroke-width="1.6" stroke-linecap="round"><line x1="8" y1="18" x2="7" y2="21" /><line x1="12" y1="18" x2="11" y2="21" /><line x1="16" y1="18" x2="15" y2="21" /></g></svg>
+                Mostly rainy
+              </div>
+            </sc-if>
+            <div>
+              <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#8A837B;font-weight:600">Trip low</div>
+              <div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:30px;font-weight:500;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.15;margin-top:2px">{{ sLow }}</div>
+            </div>
+            <div>
+              <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#8A837B;font-weight:600">Trip high</div>
+              <div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:30px;font-weight:500;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.15;margin-top:2px">{{ sHigh }}</div>
+            </div>
+          </div>
+          <div style="font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#A39C93;font-weight:600">{{ sCount }}</div>
+        </div>
+        <sc-if value="{{ showChart }}" hint-placeholder-val="{{ false }}">
+          <div style="position:relative;height:140px;margin-top:14px;padding:12px 12px 28px;background:#FAF8F4;border:1px solid #EFEBE3;border-radius:9px;cursor:crosshair;touch-action:none" onMouseMove="{{ onChartMove }}" onMouseLeave="{{ onChartLeave }}" onTouchMove="{{ onChartTouchMove }}" onTouchEnd="{{ onChartLeave }}">
+            <div style="position:absolute;top:12px;left:12px;right:12px;bottom:28px;pointer-events:none">
+              <svg style="position:absolute;top:0;left:0;width:100%;height:100%;overflow:visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="rangeFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" style="stop-color:#D9D1C8;stop-opacity:0.6" />
+                    <stop offset="100%" style="stop-color:#D9D1C8;stop-opacity:0.2" />
+                  </linearGradient>
+                </defs>
+                <polygon points="{{ absBandPoints }}" fill="#D9D1C8" opacity="0.22" />
+                <polygon points="{{ bandPoints }}" fill="url(#rangeFill)" />
+                <polyline points="{{ bestLinePoints }}" fill="none" stroke="#8A837B" stroke-width="1.8" vector-effect="non-scaling-stroke" />
+                <sc-if value="{{ showTooltip }}" hint-placeholder-val="{{ false }}">
+                  <line x1="{{ hoverPctVal }}" x2="{{ hoverPctVal }}" y1="0" y2="100" stroke="#B4ADA3" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke" />
+                  <circle cx="{{ hoverPctVal }}" cy="{{ hoverDotY }}" r="2.4" fill="#FCFAF7" stroke="#575049" stroke-width="1.4" vector-effect="non-scaling-stroke" />
+                </sc-if>
+              </svg>
+              <sc-if value="{{ showTooltip }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:2px;left:{{ hoverPctVal }}%;transform:{{ tooltipTransform }};background:#FFFFFF;border:1px solid #DFD9CF;border-radius:8px;padding:9px 12px;box-shadow:0 8px 20px rgba(28,25,23,.16);pointer-events:none;white-space:nowrap;z-index:20">
+                  <div style="font-size:11.5px;font-weight:600;color:#1B1917">{{ hoverName }}</div>
+                  <div style="font-size:10px;color:#A39C93;margin-top:1px">{{ hoverDate }}</div>
+                  <div style="display:flex;gap:12px;margin-top:6px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:#3B3731">
+                    <div><span style="color:#8A837B;font-family:inherit">avg</span> {{ hoverLow }}–{{ hoverHigh }}</div>
+                    <div><span style="color:#8A837B;font-family:inherit">rec</span> {{ hoverAbsLow }}–{{ hoverAbsHigh }}</div>
+                  </div>
+                  <div style="font-size:10.5px;color:#575049;margin-top:4px">{{ hoverRain }} rain chance</div>
+                </div>
+              </sc-if>
+            </div>
+            <div style="position:absolute;left:12px;right:12px;top:108px;height:16px;pointer-events:none">
+              <sc-for list="{{ chartStops }}" as="cs" hint-placeholder-count="3">
+                <sc-if value="{{ cs.showLabel }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:absolute;top:0;left:{{ cs.midPct }}%;transform:translateX(-50%);display:flex;align-items:center;gap:3px">
+                    <sc-for list="{{ cs.conds }}" as="ic" hint-placeholder-count="1">
+                      <sc-if value="{{ ic.sunny }}" hint-placeholder-val="{{ false }}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="#C79A3B" /><g stroke="#C79A3B" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="23" /><line x1="1" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="23" y2="12" /></g></svg>
+                      </sc-if>
+                      <sc-if value="{{ ic.partly }}" hint-placeholder-val="{{ false }}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="4" fill="#C79A3B" /><g fill="#ADA79C"><circle cx="11" cy="14" r="3.6" /><circle cx="15" cy="12.5" r="4.4" /><rect x="7" y="15" width="14" height="5.5" rx="2.75" /></g></svg>
+                      </sc-if>
+                      <sc-if value="{{ ic.cloudy }}" hint-placeholder-val="{{ false }}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><g fill="#9B948A"><circle cx="9" cy="12" r="4.2" /><circle cx="14.5" cy="10" r="5.2" /><rect x="5" y="13" width="15" height="6.5" rx="3.25" /></g></svg>
+                      </sc-if>
+                      <sc-if value="{{ ic.rainy }}" hint-placeholder-val="{{ true }}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><g fill="#8FA6AE"><circle cx="9" cy="9" r="3.8" /><circle cx="14" cy="7.5" r="4.6" /><rect x="5" y="10" width="14" height="5.5" rx="2.75" /></g><g stroke="#4E7E99" stroke-width="1.6" stroke-linecap="round"><line x1="8" y1="18" x2="7" y2="21" /><line x1="12" y1="18" x2="11" y2="21" /><line x1="16" y1="18" x2="15" y2="21" /></g></svg>
+                      </sc-if>
+                      <sc-if value="{{ ic.snowy }}" hint-placeholder-val="{{ false }}">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><g fill="#A9B7BE"><circle cx="9" cy="9" r="3.8" /><circle cx="14" cy="7.5" r="4.6" /><rect x="5" y="10" width="14" height="5.5" rx="2.75" /></g><g fill="#7FA0B3"><circle cx="8" cy="19" r="1.1" /><circle cx="12" cy="20.5" r="1.1" /><circle cx="16" cy="19" r="1.1" /></g></svg>
+                      </sc-if>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </sc-for>
+            </div>
+            <div style="position:absolute;left:12px;right:12px;bottom:3px;height:10px">
+              <sc-for list="{{ chartStops }}" as="cs" hint-placeholder-count="3">
+                <sc-if value="{{ cs.showLabel }}" hint-placeholder-val="{{ true }}">
+                  <span style="position:absolute;left:{{ cs.midPct }}%;transform:translateX(-50%);font-size:9.5px;color:#A39C93;font-weight:500;white-space:nowrap">{{ cs.label }}</span>
+                </sc-if>
+              </sc-for>
+            </div>
+            <div style="position:absolute;top:8px;right:12px;display:flex;gap:10px;font-size:9.5px;color:#A39C93;font-weight:600;text-transform:uppercase;letter-spacing:.04em">
+              <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#D9D1C8;opacity:.4;margin-right:4px;vertical-align:-1px"></span>absolute range</span>
+              <span><span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:#D9D1C8;margin-right:4px;vertical-align:-1px"></span>avg min/max</span>
+              <span><span style="display:inline-block;width:7px;height:2px;background:#8A837B;margin-right:4px;vertical-align:2px"></span>avg</span>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <sc-if value="{{ hasStops }}" hint-placeholder-val="{{ false }}">
+        <button type="button" onClick="{{ onToggleDetails }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:12px 16px;border:1px solid #DFD9CF;border-radius:10px;background:#EFEBE3;color:#3B3731;font-size:13px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;cursor:pointer" style-hover="background:#E9E3D8">
+          <span>Trip stops</span>
+          <span style="display:flex;align-items:center;gap:7px;font-size:12px;text-transform:none;letter-spacing:0;font-weight:500;color:#6F6862">{{ toggleLabel }}<span style="display:inline-block;transition:transform .15s ease;transform:{{ chevronTransform }}">▾</span></span>
+        </button>
+      </sc-if>
+      <sc-if value="{{ showDetails }}" hint-placeholder-val="{{ true }}">
+      <sc-for list="{{ stops }}" as="stop" hint-placeholder-count="2">
+        <div style="display:flex;align-items:flex-start;gap:13px">
+          <div style="flex:0 0 auto;width:25px;height:25px;margin-top:18px;border:1px solid #DFD9CF;border-radius:999px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;color:#8A837B;background:#FCFAF7">{{ stop.num }}</div>
+          <div style="flex:1 1 auto;min-width:0">
+
+            <sc-if value="{{ stop.isReady }}" hint-placeholder-val="{{ true }}">
+              <div style="background:#FFFFFF;border:1px solid #E5E0D8;border-radius:12px;padding:17px 20px 18px;box-shadow:0 1px 2px rgba(28,25,23,.04);animation:riseIn .28s ease both">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                  <div style="min-width:0">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                      <div style="font-size:17px;font-weight:600;letter-spacing:-0.01em">{{ stop.name }}</div>
+                      <sc-if value="{{ stop.condSunny }}" hint-placeholder-val="{{ false }}">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="5" fill="#C79A3B" /><g stroke="#C79A3B" stroke-width="2" stroke-linecap="round"><line x1="12" y1="1" x2="12" y2="4" /><line x1="12" y1="20" x2="12" y2="23" /><line x1="1" y1="12" x2="4" y2="12" /><line x1="20" y1="12" x2="23" y2="12" /></g></svg>
+                      </sc-if>
+                      <sc-if value="{{ stop.condPartly }}" hint-placeholder-val="{{ false }}">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="4" fill="#C79A3B" /><g fill="#ADA79C"><circle cx="11" cy="14" r="3.6" /><circle cx="15" cy="12.5" r="4.4" /><rect x="7" y="15" width="14" height="5.5" rx="2.75" /></g></svg>
+                      </sc-if>
+                      <sc-if value="{{ stop.condCloudy }}" hint-placeholder-val="{{ false }}">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><g fill="#9B948A"><circle cx="9" cy="12" r="4.2" /><circle cx="14.5" cy="10" r="5.2" /><rect x="5" y="13" width="15" height="6.5" rx="3.25" /></g></svg>
+                      </sc-if>
+                      <sc-if value="{{ stop.condRainy }}" hint-placeholder-val="{{ true }}">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><g fill="#8FA6AE"><circle cx="9" cy="9" r="3.8" /><circle cx="14" cy="7.5" r="4.6" /><rect x="5" y="10" width="14" height="5.5" rx="2.75" /></g><g stroke="#4E7E99" stroke-width="1.6" stroke-linecap="round"><line x1="8" y1="18" x2="7" y2="21" /><line x1="12" y1="18" x2="11" y2="21" /><line x1="16" y1="18" x2="15" y2="21" /></g></svg>
+                      </sc-if>
+                      <sc-if value="{{ stop.condSnowy }}" hint-placeholder-val="{{ false }}">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><g fill="#A9B7BE"><circle cx="9" cy="9" r="3.8" /><circle cx="14" cy="7.5" r="4.6" /><rect x="5" y="10" width="14" height="5.5" rx="2.75" /></g><g fill="#7FA0B3"><circle cx="8" cy="19" r="1.1" /><circle cx="12" cy="20.5" r="1.1" /><circle cx="16" cy="19" r="1.1" /></g></svg>
+                      </sc-if>
+                      <div style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;font-weight:400;color:#6F6862">
+                        <span style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.05em;color:#8A837B">{{ stop.nightsText }}</span>
+                        <span style="width:1px;height:11px;background:#DFD9CF"></span>
+                        <span>{{ stop.dateRangeText }}</span>
+                      </div>
+                    </div>
+                    <div style="font-size:12.5px;color:#8A837B;margin-top:8px">{{ stop.region }}</div>
+                  </div>
+                  <span style="flex:0 0 auto;font-size:9.5px;letter-spacing:.04em;padding:2px 7px;border-radius:999px;white-space:nowrap;{{ stop.sourceStyle }}">{{ stop.sourceLabel }}</span>
+                </div>
+                <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-top:16px">
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:14px;flex:1 1 auto">
+                    <div>
+                      <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#A39C93;font-weight:600">Typical high</div>
+                      <div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:27px;font-weight:500;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:3px">{{ stop.high }}</div>
+                    </div>
+                    <div>
+                      <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#A39C93;font-weight:600">Typical low</div>
+                      <div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:27px;font-weight:500;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:3px;color:#575049">{{ stop.low }}</div>
+                    </div>
+                    <div>
+                      <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#A39C93;font-weight:600">Rain chance</div>
+                      <div style="font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:27px;font-weight:500;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:3px;color:#575049">{{ stop.rain }}</div>
+                    </div>
+                  </div>
+                  <button type="button" onClick="{{ stop.onEdit }}" title="Edit stop" aria-label="Edit stop" style="flex:0 0 auto;width:30px;height:30px;padding:0;border:1px solid #E5E0D8;border-radius:8px;background:transparent;display:flex;align-items:center;justify-content:center;color:#6F6862;cursor:pointer" style-hover="background:#F4F1EA;border-color:#DFD9CF;color:#1B1917">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                  </button>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ stop.isLoading }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#FFFFFF;border:1px solid #E5E0D8;border-radius:12px;padding:17px 20px 18px;box-shadow:0 1px 2px rgba(28,25,23,.04)">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                  <div style="min-width:0">
+                    <div style="font-size:17px;font-weight:600;letter-spacing:-0.01em;color:#3B3731">{{ stop.name }}</div>
+                    <div style="font-size:12.5px;color:#A39C93;margin-top:3px">{{ stop.sub }} · looking up averages…</div>
+                  </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:14px;margin-top:16px">
+                  <div>
+                    <div style="height:9px;width:64px;border-radius:4px;background:linear-gradient(90deg,#F1EDE6 0%,#E5DFD5 50%,#F1EDE6 100%);background-size:250% 100%;animation:shimmer 1.5s linear infinite"></div>
+                    <div style="height:24px;width:78px;margin-top:8px;border-radius:5px;background:linear-gradient(90deg,#F1EDE6 0%,#E5DFD5 50%,#F1EDE6 100%);background-size:250% 100%;animation:shimmer 1.5s linear infinite"></div>
+                  </div>
+                  <div>
+                    <div style="height:9px;width:60px;border-radius:4px;background:linear-gradient(90deg,#F1EDE6 0%,#E5DFD5 50%,#F1EDE6 100%);background-size:250% 100%;animation:shimmer 1.5s linear .1s infinite"></div>
+                    <div style="height:24px;width:70px;margin-top:8px;border-radius:5px;background:linear-gradient(90deg,#F1EDE6 0%,#E5DFD5 50%,#F1EDE6 100%);background-size:250% 100%;animation:shimmer 1.5s linear .1s infinite"></div>
+                  </div>
+                  <div>
+                    <div style="height:9px;width:66px;border-radius:4px;background:linear-gradient(90deg,#F1EDE6 0%,#E5DFD5 50%,#F1EDE6 100%);background-size:250% 100%;animation:shimmer 1.5s linear .2s infinite"></div>
+                    <div style="height:24px;width:62px;margin-top:8px;border-radius:5px;background:linear-gradient(90deg,#F1EDE6 0%,#E5DFD5 50%,#F1EDE6 100%);background-size:250% 100%;animation:shimmer 1.5s linear .2s infinite"></div>
+                  </div>
+                </div>
+                <div style="height:38px;margin-top:16px;border-radius:9px;background:linear-gradient(90deg,#F4F1EA 0%,#EAE5DC 50%,#F4F1EA 100%);background-size:250% 100%;animation:shimmer 1.5s linear .3s infinite"></div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ stop.isEditing }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#FFFFFF;border:1px solid #C9C1B4;border-radius:12px;padding:17px 20px 19px;box-shadow:0 6px 20px rgba(28,25,23,.08)">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px">
+                  <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#8A837B;font-weight:600">Edit stop</div>
+                  <button type="button" onClick="{{ stop.onRemove }}" style="padding:0;border:0;background:transparent;color:#8C4A2F;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px" style-hover="color:#6E3A25">Delete stop</button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px">
+                  <div style="position:relative;display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:12px;color:#6F6862">Location</label>
+                    <input type="text" value="{{ draftQuery }}" onChange="{{ onQueryChange }}" onKeyDown="{{ onQueryKeyDown }}" placeholder="Search a city" style="width:100%;padding:10px 12px;border:1px solid #D8D1C6;border-radius:8px;background:#FCFAF7;font-size:14px;color:#1B1917;outline:none" style-focus="border-color:#3F6B5C;box-shadow:0 0 0 3px rgba(63,107,92,.14);background:#FFFFFF" />
+                    <sc-if value="{{ showSuggestions }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:absolute;top:100%;left:0;right:0;z-index:40;margin-top:5px;background:#FFFFFF;border:1px solid #DFD9CF;border-radius:9px;box-shadow:0 10px 26px rgba(28,25,23,.12);overflow:hidden;max-height:232px;overflow-y:auto">
+                        <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="0">
+                          <button type="button" onClick="{{ s.onPick }}" style="display:flex;width:100%;align-items:baseline;gap:8px;padding:9px 12px;border:0;border-bottom:1px solid #F2EEE7;background:transparent;cursor:pointer;text-align:left" style-hover="background:#F5F2EB">
+                            <span style="font-size:13.5px;color:#1B1917">{{ s.name }}</span>
+                            <span style="font-size:12px;color:#A39C93">{{ s.region }}</span>
+                          </button>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:12px;color:#6F6862">Date</label>
+                    <input type="date" value="{{ draftDate }}" onChange="{{ onDateChange }}" style="width:100%;padding:10px 12px;border:1px solid #D8D1C6;border-radius:8px;background:#FCFAF7;font-size:14px;color:#1B1917;outline:none" style-focus="border-color:#3F6B5C;box-shadow:0 0 0 3px rgba(63,107,92,.14);background:#FFFFFF" />
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="font-size:12px;color:#6F6862">Nights here</label>
+                    <input type="number" min="1" value="{{ draftNights }}" onChange="{{ onNightsChange }}" style="width:100%;padding:10px 12px;border:1px solid #D8D1C6;border-radius:8px;background:#FCFAF7;font-size:14px;color:#1B1917;outline:none" style-focus="border-color:#3F6B5C;box-shadow:0 0 0 3px rgba(63,107,92,.14);background:#FFFFFF" />
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap">
+                  <div style="font-size:12.5px;color:#A39C93">{{ draftHint }}</div>
+                  <div style="display:flex;gap:8px">
+                    <button type="button" onClick="{{ onCancel }}" style="padding:9px 14px;border:1px solid #DFD9CF;border-radius:8px;background:#FFFFFF;color:#575049;font-size:13.5px;cursor:pointer" style-hover="background:#F5F2EB;color:#1B1917">Cancel</button>
+                    <sc-if value="{{ canSave }}" hint-placeholder-val="{{ true }}">
+                      <button type="button" onClick="{{ onSave }}" style="padding:9px 16px;border:1px solid #3F6B5C;border-radius:8px;background:#3F6B5C;color:#FFFFFF;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#355A4D;border-color:#355A4D">Save stop</button>
+                    </sc-if>
+                    <sc-if value="{{ cannotSave }}" hint-placeholder-val="{{ false }}">
+                      <button type="button" disabled="{{ true }}" style="padding:9px 16px;border:1px solid #E5E0D8;border-radius:8px;background:#F1EDE6;color:#B4ADA3;font-size:13.5px;font-weight:600;cursor:not-allowed">Save stop</button>
+                    </sc-if>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+
+          </div>
+        </div>
+      </sc-for>
+
+      <sc-if value="{{ showTrailingEditor }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:flex-start;gap:13px">
+          <div style="flex:0 0 auto;width:25px;height:25px;margin-top:18px;border:1px dashed #CFC8BC;border-radius:999px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11.5px;color:#B4ADA3;background:#FCFAF7">{{ nextNum }}</div>
+          <div style="flex:1 1 auto;min-width:0">
+            <div style="background:#FFFFFF;border:1px solid #C9C1B4;border-radius:12px;padding:17px 20px 19px;box-shadow:0 6px 20px rgba(28,25,23,.08)">
+              <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#8A837B;font-weight:600;margin-bottom:14px">New stop</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px">
+                <div style="position:relative;display:flex;flex-direction:column;gap:6px">
+                  <label style="font-size:12px;color:#6F6862">Location</label>
+                  <input type="text" value="{{ draftQuery }}" onChange="{{ onQueryChange }}" onKeyDown="{{ onQueryKeyDown }}" placeholder="Search a city" style="width:100%;padding:10px 12px;border:1px solid #D8D1C6;border-radius:8px;background:#FCFAF7;font-size:14px;color:#1B1917;outline:none" style-focus="border-color:#3F6B5C;box-shadow:0 0 0 3px rgba(63,107,92,.14);background:#FFFFFF" />
+                  <sc-if value="{{ showSuggestions }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:100%;left:0;right:0;z-index:40;margin-top:5px;background:#FFFFFF;border:1px solid #DFD9CF;border-radius:9px;box-shadow:0 10px 26px rgba(28,25,23,.12);overflow:hidden;max-height:232px;overflow-y:auto">
+                      <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="0">
+                        <button type="button" onClick="{{ s.onPick }}" style="display:flex;width:100%;align-items:baseline;gap:8px;padding:9px 12px;border:0;border-bottom:1px solid #F2EEE7;background:transparent;cursor:pointer;text-align:left" style-hover="background:#F5F2EB">
+                          <span style="font-size:13.5px;color:#1B1917">{{ s.name }}</span>
+                          <span style="font-size:12px;color:#A39C93">{{ s.region }}</span>
+                        </button>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <label style="font-size:12px;color:#6F6862">Date</label>
+                  <input type="date" value="{{ draftDate }}" onChange="{{ onDateChange }}" style="width:100%;padding:10px 12px;border:1px solid #D8D1C6;border-radius:8px;background:#FCFAF7;font-size:14px;color:#1B1917;outline:none" style-focus="border-color:#3F6B5C;box-shadow:0 0 0 3px rgba(63,107,92,.14);background:#FFFFFF" />
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <label style="font-size:12px;color:#6F6862">Nights here</label>
+                  <input type="number" min="1" value="{{ draftNights }}" onChange="{{ onNightsChange }}" style="width:100%;padding:10px 12px;border:1px solid #D8D1C6;border-radius:8px;background:#FCFAF7;font-size:14px;color:#1B1917;outline:none" style-focus="border-color:#3F6B5C;box-shadow:0 0 0 3px rgba(63,107,92,.14);background:#FFFFFF" />
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap">
+                <div style="font-size:12.5px;color:#A39C93">{{ draftHint }}</div>
+                <div style="display:flex;gap:8px">
+                  <button type="button" onClick="{{ onCancel }}" style="padding:9px 14px;border:1px solid #DFD9CF;border-radius:8px;background:#FFFFFF;color:#575049;font-size:13.5px;cursor:pointer" style-hover="background:#F5F2EB;color:#1B1917">Cancel</button>
+                  <sc-if value="{{ canSave }}" hint-placeholder-val="{{ true }}">
+                    <button type="button" onClick="{{ onSave }}" style="padding:9px 16px;border:1px solid #3F6B5C;border-radius:8px;background:#3F6B5C;color:#FFFFFF;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#355A4D;border-color:#355A4D">Save stop</button>
+                  </sc-if>
+                  <sc-if value="{{ cannotSave }}" hint-placeholder-val="{{ false }}">
+                    <button type="button" disabled="{{ true }}" style="padding:9px 16px;border:1px solid #E5E0D8;border-radius:8px;background:#F1EDE6;color:#B4ADA3;font-size:13.5px;font-weight:600;cursor:not-allowed">Save stop</button>
+                  </sc-if>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showAddButton }}" hint-placeholder-val="{{ true }}">
+        <button type="button" onClick="{{ onAdd }}" style="margin-left:38px;padding:14px 18px;border:1px dashed #CFC8BC;border-radius:11px;background:transparent;color:#6F6862;font-size:13.5px;font-weight:500;cursor:pointer;text-align:left" style-hover="border-color:#3F6B5C;color:#3F6B5C;background:#F2F5F3">+ Add stop</button>
+      </sc-if>
+      </sc-if>
+
+      <sc-if value="{{ showCollapsedHint }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-left:38px;padding:13px 16px;border:1px dashed #DFD9CF;border-radius:10px;color:#8A837B;font-size:13px">{{ collapsedLabel }}</div>
+      </sc-if>
+
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="border:1px dashed #CFC8BC;border-radius:14px;background:#FCFAF7;padding:52px 28px 54px;text-align:center">
+          <div style="font-size:18px;font-weight:600;letter-spacing:-0.01em">No stops yet</div>
+          <div style="font-size:14px;color:#6F6862;margin-top:7px;max-width:38ch;margin-left:auto;margin-right:auto;line-height:1.5;text-wrap:pretty">Add a city and a date and you'll get typical highs, lows, rain odds and a packing line for that stop.</div>
+          <button type="button" onClick="{{ onAdd }}" style="margin-top:22px;padding:11px 20px;border:1px solid #3F6B5C;border-radius:9px;background:#3F6B5C;color:#FFFFFF;font-size:14px;font-weight:600;cursor:pointer" style-hover="background:#355A4D;border-color:#355A4D">Add your first stop</button>
+        </div>
+      </sc-if>
+    </div>
+
+  </div>
+
+  <sc-if value="{{ showAbout }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onCloseAbout }}" style="position:fixed;inset:0;background:rgba(27,25,23,.32);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100">
+      <div onClick="{{ stopPropagation }}" style="background:#FFFFFF;border:1px solid #DFD9CF;border-radius:14px;max-width:420px;width:100%;padding:26px 26px 24px;box-shadow:0 20px 60px rgba(28,25,23,.22)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div style="font-size:17px;font-weight:600;letter-spacing:-0.01em">About these figures</div>
+          <button type="button" onClick="{{ onCloseAbout }}" aria-label="Close" style="flex:0 0 auto;width:26px;height:26px;border:0;background:transparent;color:#8A837B;font-size:18px;line-height:1;cursor:pointer" style-hover="color:#1B1917">×</button>
+        </div>
+        <div style="font-size:13.5px;color:#5A544D;line-height:1.6;margin-top:12px;text-wrap:pretty">Figures are long-run historical averages for each stop's date range, not a forecast. Typical high/low reflect the usual range for that time of year; recent stops closer in time may blend in short-range forecast data.</div>
+        <div style="font-size:13.5px;color:#5A544D;line-height:1.6;margin-top:10px;text-wrap:pretty">Your trip is saved in this browser only — it isn't synced or shared anywhere else.</div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;units&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;F&quot;,&quot;C&quot;],&quot;default&quot;:&quot;F&quot;,&quot;tsType&quot;:&quot;\&quot;F\&quot; | \&quot;C\&quot;&quot;},&quot;simulatedDelayMs&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:900,&quot;min&quot;:0,&quot;max&quot;:2500,&quot;step&quot;:100,&quot;unit&quot;:&quot;ms&quot;,&quot;tsType&quot;:&quot;number&quot;}}">
+const CITIES = [
+  ["Reykjavík","Iceland",8,3,5,55,10,9,0],["Oslo","Norway",11,2,10,45,10,7,0],
+  ["Stockholm","Sweden",11,3,10,44,10,7,0],["Copenhagen","Denmark",12,6,8,45,10,9,0],
+  ["London","United Kingdom",15,8,7,45,8,10,0],["Edinburgh","United Kingdom",13,6,6,50,8,9,0],
+  ["Dublin","Ireland",14,7,6,50,8,10,0],["Amsterdam","Netherlands",14,7,8,45,10,9,0],
+  ["Paris","France",16,8,8,40,8,10,0],["Berlin","Germany",14,6,10,40,8,6,0],
+  ["Prague","Czechia",14,5,10,38,10,6,0],["Vienna","Austria",15,7,10,38,8,6,0],
+  ["Zurich","Switzerland",14,5,10,42,8,6,0],["Milan","Italy",18,9,10,35,10,4,0],
+  ["Rome","Italy",21,11,8,30,14,10,0],["Barcelona","Spain",21,13,7,25,10,9,0],
+  ["Madrid","Spain",21,9,9,25,12,10,0],["Lisbon","Portugal",21,13,6,28,16,11,0],
+  ["Athens","Greece",23,14,9,22,14,11,0],["Istanbul","Türkiye",19,12,9,35,15,11,0],
+  ["Marrakesh","Morocco",28,13,9,12,8,10,0],["Cairo","Egypt",29,16,8,6,5,0,0],
+  ["Cape Town","South Africa",22,13,5,30,15,5,1],["Nairobi","Kenya",25,13,2,35,18,3,0],
+  ["Dubai","UAE",33,22,8,8,7,1,0],["Mumbai","India",32,24,3,35,35,6,0],
+  ["New Delhi","India",32,19,8,25,25,6,0],["Kathmandu","Nepal",23,11,6,30,35,6,0],
+  ["Bangkok","Thailand",33,25,2,45,25,8,0],["Singapore","Singapore",31,25,1,55,12,11,0],
+  ["Hong Kong","Hong Kong",26,21,6,40,25,6,0],["Tokyo","Japan",20,13,9,40,15,8,0],
+  ["Kyoto","Japan",21,11,10,42,15,5,0],["Seoul","South Korea",17,8,12,35,25,6,0],
+  ["Beijing","China",18,7,13,28,25,6,0],["Sydney","Australia",22,15,5,35,10,2,1],
+  ["Melbourne","Australia",20,11,6,40,8,8,1],["Auckland","New Zealand",19,12,5,45,12,6,1],
+  ["Queenstown","New Zealand",15,5,8,40,8,11,1],["Buenos Aires","Argentina",23,14,7,35,10,2,1],
+  ["Santiago","Chile",22,8,8,20,18,5,1],["Rio de Janeiro","Brazil",28,21,4,40,15,11,1],
+  ["Lima","Peru",22,16,4,10,6,6,1],["Bogotá","Colombia",20,9,1,45,20,9,0],
+  ["Mexico City","Mexico",23,11,3,35,25,6,0],["Vancouver","Canada",14,7,8,50,20,11,0],
+  ["Seattle","United States",16,8,8,48,20,11,0],["San Francisco","United States",18,11,3,25,22,0,0],
+  ["Los Angeles","United States",24,14,5,18,16,0,0],["Denver","United States",17,3,12,28,10,4,0],
+  ["Chicago","United States",15,5,14,33,8,5,0],["New York","United States",17,8,12,35,5,4,0],
+  ["Boston","United States",15,6,12,35,5,3,0],["Washington, DC","United States",20,10,12,33,6,4,0],
+  ["Austin","United States",27,15,10,28,8,4,0],["Miami","United States",29,22,4,40,22,7,0],
+  ["Honolulu","United States",29,22,3,30,15,0,0],["Anchorage","United States",8,0,11,35,15,7,0],
+  ["Toronto","Canada",13,4,13,35,8,7,0],["Montréal","Canada",11,2,14,35,8,6,0]
+].map(function (c, i) {
+  return { id: "c" + i, name: c[0], region: c[1], h: c[2], l: c[3], amp: c[4], rb: c[5], ra: c[6], wp: c[7], south: !!c[8] };
+});
+
+const BY_ID = {};
+CITIES.forEach(function (c) { BY_ID[c.id] = c; });
+const TAU = Math.PI * 2 / 12;
+const KEY = "twp.trip.v1";
+const FORECAST_DAYS = 15;
+
+function hashOffset(str, span) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+  return ((Math.abs(h) % (span * 2 + 1)) - span);
+}
+
+function daysOut(iso) {
+  const p = String(iso).split("-").map(Number);
+  const d = new Date(p[0], p[1] - 1, p[2]);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  return Math.round((d - today) / 86400000);
+}
+
+function condKey(highC, rain) {
+  if (highC <= 1 && rain >= 25) return "snowy";
+  if (rain >= 55) return "rainy";
+  if (rain >= 35) return "cloudy";
+  if (rain >= 18) return "partly";
+  return "sunny";
+}
+
+function climate(city, month) {
+  const f = Math.cos(TAU * (month - (city.south ? 0 : 6)));
+  const rain = Math.max(2, Math.min(94, Math.round(city.rb + city.ra * Math.cos(TAU * (month - city.wp)))));
+  return { high: city.h + city.amp * f, low: city.l + city.amp * f, rain: rain };
+}
+
+class Component extends DCLogic {
+  state = { stops: [], draft: null, units: null, showDetails: true, hoverPct: null, showAbout: false };
+  timers = {};
+  hcache = {};
+  pcache = {};
+  H = null;
+
+  handlers() {
+    if (this.H) return this.H;
+    const self = this;
+    this.H = {
+      onSetC: function () { self.setUnits("C"); },
+      onSetF: function () { self.setUnits("F"); },
+      onAdd: function () { self.openDraft(null); },
+      onCancel: function () { self.setState({ draft: null }); },
+      onSave: function () { self.saveDraft(); },
+      onClear: function () { self.setState({ draft: null }); self.commit([]); },
+      onOpenAbout: function () { self.setState({ showAbout: true }); },
+      onCloseAbout: function () { self.setState({ showAbout: false }); },
+      stopPropagation: function (e) { e.stopPropagation(); },
+      onToggleDetails: function () { self.toggleDetails(); },
+      onChartMove: function (e) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const w = rect.width - 24;
+        if (w <= 0) return;
+        const pct = Math.max(0, Math.min(100, ((e.clientX - rect.left - 12) / w) * 100));
+        self.setState({ hoverPct: pct });
+      },
+      onChartTouchMove: function (e) {
+        if (!e.touches || !e.touches[0]) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const w = rect.width - 24;
+        if (w <= 0) return;
+        const pct = Math.max(0, Math.min(100, ((e.touches[0].clientX - rect.left - 12) / w) * 100));
+        self.setState({ hoverPct: pct });
+      },
+      onChartLeave: function () { self.setState({ hoverPct: null }); },
+      onQueryChange: function (e) {
+        const v = e.target.value;
+        self.setState({ draft: Object.assign({}, self.state.draft, { query: v, cityId: null }) });
+      },
+      onQueryKeyDown: function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const m = self.matchList();
+          if (m.length) self.pick(m[0].id)();
+        } else if (e.key === "Escape") {
+          self.setState({ draft: null });
+        }
+      },
+      onDateChange: function (e) {
+        const v = e.target.value;
+        self.setState({ draft: Object.assign({}, self.state.draft, { date: v }) });
+      },
+      onNightsChange: function (e) {
+        const v = e.target.value;
+        self.setState({ draft: Object.assign({}, self.state.draft, { nights: v }) });
+      }
+    };
+    return this.H;
+  }
+
+  setUnits(u) { this.setState({ units: u }); this.persist(this.state.stops, u); }
+
+  stopHandlers(id) {
+    const self = this;
+    if (!this.hcache[id]) {
+      this.hcache[id] = {
+        onEdit: function () {
+          const s = self.state.stops.filter(function (x) { return x.id === id; })[0];
+          if (s) self.openDraft(s);
+        },
+        onRemove: function () { self.removeStop(id); }
+      };
+    }
+    return this.hcache[id];
+  }
+
+  pick(cityId) {
+    const self = this;
+    if (!this.pcache[cityId]) {
+      this.pcache[cityId] = function () {
+        self.setState({ draft: Object.assign({}, self.state.draft, { cityId: cityId, query: BY_ID[cityId].name }) });
+      };
+    }
+    return this.pcache[cityId];
+  }
+
+  matchList() {
+    const d = this.state.draft;
+    const q = d ? d.query.trim().toLowerCase() : "";
+    if (!q) return [];
+    return CITIES.filter(function (c) {
+      return c.name.toLowerCase().indexOf(q) >= 0 || c.region.toLowerCase().indexOf(q) === 0;
+    }).slice(0, 6);
+  }
+
+  componentDidMount() {
+    let saved = null;
+    try { saved = JSON.parse(window.localStorage.getItem(KEY) || "null"); } catch (e) { saved = null; }
+    const stops = (saved && Array.isArray(saved.stops) ? saved.stops : [])
+      .filter(function (s) { return s && BY_ID[s.cityId]; })
+      .map(function (s) { return { id: s.id, cityId: s.cityId, date: s.date, status: "ready" }; });
+    this.setState({ stops: stops, units: (saved && saved.units) || this.props.units || "F" });
+  }
+
+  componentWillUnmount() {
+    const t = this.timers;
+    Object.keys(t).forEach(function (k) { clearTimeout(t[k]); });
+  }
+
+  persist(stops, units) {
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify({
+        units: units,
+        stops: stops.map(function (s) { return { id: s.id, cityId: s.cityId, date: s.date }; })
+      }));
+    } catch (e) {}
+  }
+
+  commit(stops) {
+    this.setState({ stops: stops });
+    this.persist(stops, this.units());
+  }
+
+  units() { return this.state.units || this.props.units || "F"; }
+
+  fetchFor(id) {
+    const delay = this.props.simulatedDelayMs == null ? 900 : this.props.simulatedDelayMs;
+    const self = this;
+    clearTimeout(this.timers[id]);
+    this.timers[id] = setTimeout(function () {
+      self.setState(function (st) {
+        return { stops: st.stops.map(function (s) { return s.id === id ? Object.assign({}, s, { status: "ready" }) : s; }) };
+      });
+    }, delay + Math.random() * 420);
+  }
+
+  addDays(iso, n) {
+    const p = String(iso).split("-").map(Number);
+    const dt = new Date(p[0], p[1] - 1, p[2]);
+    dt.setDate(dt.getDate() + n);
+    return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0") + "-" + String(dt.getDate()).padStart(2, "0");
+  }
+
+  openDraft(stop) {
+    if (stop) {
+      this.setState({ draft: { targetId: stop.id, cityId: stop.cityId, query: BY_ID[stop.cityId].name, date: stop.date, nights: stop.nights || 1 } });
+      return;
+    }
+    const prev = this.state.stops[this.state.stops.length - 1];
+    const date = prev && prev.date ? this.addDays(prev.date, prev.nights || 1) : "";
+    this.setState({ draft: { targetId: null, cityId: null, query: "", date: date, nights: 1 } });
+  }
+
+  saveDraft() {
+    const d = this.state.draft;
+    if (!d || !d.cityId || !d.date) return;
+    const nights = Math.max(1, Number(d.nights) || 1);
+    let stops;
+    let id;
+    if (d.targetId) {
+      id = d.targetId;
+      stops = this.state.stops.map(function (s) {
+        return s.id === id ? { id: id, cityId: d.cityId, date: d.date, nights: nights, status: "loading" } : s;
+      });
+    } else {
+      id = "s" + Date.now();
+      stops = this.state.stops.concat([{ id: id, cityId: d.cityId, date: d.date, nights: nights, status: "loading" }]);
+    }
+    const wasNew = !d.targetId;
+    this.commit(stops);
+    this.fetchFor(id);
+    if (wasNew) {
+      const savedNights = nights;
+      const nextDate = this.addDays(d.date, savedNights);
+      this.setState({ draft: { targetId: null, cityId: null, query: "", date: nextDate, nights: 1 } });
+    } else {
+      this.setState({ draft: null });
+    }
+  }
+
+  removeStop(id) {
+    clearTimeout(this.timers[id]);
+    const d = this.state.draft;
+    if (d && d.targetId === id) this.setState({ draft: null });
+    this.commit(this.state.stops.filter(function (s) { return s.id !== id; }));
+  }
+
+  toggleDetails() {
+    this.setState({ showDetails: !this.state.showDetails });
+  }
+
+  fmt(c) {
+    return Math.round(this.units() === "C" ? c : c * 9 / 5 + 32) + "°";
+  }
+
+  dateLabel(iso) {
+    const p = String(iso || "").split("-");
+    if (p.length !== 3) return "";
+    const dt = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return dt.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  }
+
+  monthOf(iso) { return Math.max(0, Math.min(11, Number(String(iso).split("-")[1]) - 1)); }
+
+  parseIso(iso) {
+    const p = String(iso || "").split("-").map(Number);
+    return new Date(p[0] || 1970, (p[1] || 1) - 1, p[2] || 1);
+  }
+
+  dateRangeText(iso, nights) {
+    const n = Math.max(1, nights || 1);
+    const start = this.parseIso(iso);
+    const end = this.parseIso(this.addDays(iso, n));
+    const startStr = start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+      return startStr + "\u2013" + end.getDate() + ", " + end.getFullYear();
+    }
+    const endStr = end.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return startStr + " \u2013 " + endStr + ", " + end.getFullYear();
+  }
+
+  condSamplesForStop(s, city) {
+    const nights = Math.max(1, s.nights || 1);
+    const samples = nights <= 2 ? 1 : nights <= 5 ? 2 : 3;
+    const out = [];
+    for (let i = 0; i < samples; i++) {
+      const dayIdx = samples === 1 ? Math.floor(nights / 2) : Math.round((i * (nights - 1)) / (samples - 1));
+      const iso = this.addDays(s.date, dayIdx);
+      const out_ = daysOut(iso);
+      const forecastable = out_ >= 0 && out_ <= FORECAST_DAYS;
+      const base = climate(city, this.monthOf(iso));
+      const cl = forecastable ? {
+        high: base.high + hashOffset(s.id + "ch" + dayIdx, 3),
+        rain: Math.max(0, Math.min(100, base.rain + hashOffset(s.id + "cr" + dayIdx, 14)))
+      } : base;
+      const key = condKey(cl.high, cl.rain);
+      if (!out.length || out[out.length - 1] !== key) out.push(key);
+    }
+    return out;
+  }
+
+  condFlagsForStop(s, city) {
+    return this.condSamplesForStop(s, city).map(function (k) {
+      return { sunny: k === "sunny", partly: k === "partly", cloudy: k === "cloudy", rainy: k === "rainy", snowy: k === "snowy" };
+    });
+  }
+
+  daysFromStart(iso, startIso) {
+    const p = String(iso).split("-").map(Number);
+    const q = String(startIso).split("-").map(Number);
+    const d = new Date(p[0], p[1] - 1, p[2]);
+    const s = new Date(q[0], q[1] - 1, q[2]);
+    return Math.round((d - s) / 86400000);
+  }
+
+  renderVals() {
+    const self = this;
+    const st = this.state;
+    const d = st.draft;
+    const stops = st.stops.map(function (s, i) {
+      const city = BY_ID[s.cityId];
+      const editing = !!(d && d.targetId === s.id);
+      const loading = s.status === "loading" && !editing;
+      const base = climate(city, self.monthOf(s.date));
+      const out = daysOut(s.date);
+      const forecast = out >= 0 && out <= FORECAST_DAYS;
+      const cl = forecast ? {
+        high: base.high + hashOffset(s.id + "h", 3),
+        low: base.low + hashOffset(s.id + "l", 3),
+        rain: Math.max(0, Math.min(100, base.rain + hashOffset(s.id + "r", 12)))
+      } : base;
+      const h = self.stopHandlers(s.id);
+      const cond = condKey(cl.high, cl.rain);
+      return {
+        num: i + 1, name: city.name, region: city.region,
+        sub: city.region + " · " + self.dateLabel(s.date) + (s.nights ? " · " + s.nights + (s.nights === 1 ? " night" : " nights") : ""),
+        dateRangeText: self.dateRangeText(s.date, s.nights || 1),
+        nightsText: (s.nights || 1) + ((s.nights || 1) === 1 ? " night" : " nights"),
+        high: self.fmt(cl.high), low: self.fmt(cl.low), rain: cl.rain + "%",
+        condSunny: cond === "sunny", condPartly: cond === "partly", condCloudy: cond === "cloudy", condRainy: cond === "rainy", condSnowy: cond === "snowy",
+        isForecast: forecast,
+        sourceLabel: forecast ? "Forecast · " + out + "d out" : "Historical avg",
+        sourceStyle: forecast ? "color:#3F6B5C;background:#E7EFEA;border:1px solid #C9DCD1" : "color:#8A837B;background:#EDE8E0;border:1px solid #DFD9CF",
+        isEditing: editing, isLoading: loading, isReady: !editing && !loading,
+        onEdit: h.onEdit, onRemove: h.onRemove
+      };
+    });
+
+    const ready = st.stops.filter(function (s) { return s.status === "ready" && !(d && d.targetId === s.id); });
+    const cls = ready.map(function (s) {
+      const city = BY_ID[s.cityId];
+      const c = climate(city, self.monthOf(s.date));
+      const spread = 6 + city.amp * 0.18;
+      return Object.assign({}, c, { absHigh: c.high + spread, absLow: c.low - spread });
+    });
+    let sLow = null, sHigh = null, char = "";
+    if (cls.length) {
+      const lows = cls.map(function (c) { return c.low; });
+      const highs = cls.map(function (c) { return c.high; });
+      const rains = cls.map(function (c) { return c.rain; });
+      const minLow = Math.min.apply(null, lows);
+      const maxHigh = Math.max.apply(null, highs);
+      const avgRain = rains.reduce(function (a, b) { return a + b; }, 0) / rains.length;
+      sLow = self.fmt(minLow);
+      sHigh = self.fmt(maxHigh);
+      char = avgRain < 26 ? "sunny" : avgRain > 48 ? "rainy" : "mixed";
+    }
+
+    let chartStops = [], rainPoints = "", bandPoints = "", bestLinePoints = "", absBandPoints = "", hoverInfo = null;
+    if (cls.length > 1) {
+      const tempMax = Math.max.apply(null, cls.map(function (c) { return c.absHigh; })) + 2;
+      const tempMin = Math.min.apply(null, cls.map(function (c) { return c.absLow; })) - 2;
+      const range = Math.max(1, tempMax - tempMin);
+      const dayOffsets = ready.map(function (s) { return self.daysFromStart(s.date, ready[0].date); });
+      const lastNights = Math.max(1, ready[ready.length - 1].nights || 1);
+      const span = Math.max(1, dayOffsets[dayOffsets.length - 1] + lastNights);
+      const segs = ready.map(function (s, i) {
+        const c = cls[i];
+        const nights = Math.max(1, s.nights || 1);
+        const x1 = (dayOffsets[i] / span) * 100;
+        const x2 = ((dayOffsets[i] + nights) / span) * 100;
+        const yHigh = ((tempMax - c.high) / range) * 100;
+        const yLow = ((tempMax - c.low) / range) * 100;
+        const yAbsHigh = ((tempMax - c.absHigh) / range) * 100;
+        const yAbsLow = ((tempMax - c.absLow) / range) * 100;
+        const yMid = (yHigh + yLow) / 2;
+        return { x1: x1, x2: x2, mid: (x1 + x2) / 2, yHigh: yHigh, yLow: yLow, yAbsHigh: yAbsHigh, yAbsLow: yAbsLow, yMid: yMid, rain: c.rain, name: BY_ID[s.cityId].name, conds: self.condFlagsForStop(s, BY_ID[s.cityId]) };
+      });
+      const highPts = [], lowPts = [], absHighPts = [], absLowPts = [], midPts = [], rainPts = [];
+      segs.forEach(function (sg) {
+        highPts.push(sg.x1 + "," + sg.yHigh, sg.x2 + "," + sg.yHigh);
+        lowPts.push(sg.x1 + "," + sg.yLow, sg.x2 + "," + sg.yLow);
+        absHighPts.push(sg.x1 + "," + sg.yAbsHigh, sg.x2 + "," + sg.yAbsHigh);
+        absLowPts.push(sg.x1 + "," + sg.yAbsLow, sg.x2 + "," + sg.yAbsLow);
+        midPts.push(sg.mid + "," + sg.yMid);
+        rainPts.push(sg.mid + "," + (100 - sg.rain));
+      });
+      bandPoints = highPts.join(" ") + " " + lowPts.slice().reverse().join(" ");
+      absBandPoints = absHighPts.join(" ") + " " + absLowPts.slice().reverse().join(" ");
+      bestLinePoints = midPts.join(" ");
+      rainPoints = rainPts.join(" ");
+      let lastLabelMid = -Infinity;
+      const minGap = 9;
+      chartStops = segs.map(function (sg) {
+        const show = sg.mid - lastLabelMid >= minGap;
+        if (show) lastLabelMid = sg.mid;
+        return { midPct: sg.mid, label: sg.name.length > 9 ? sg.name.slice(0, 8) + "…" : sg.name, showLabel: show, conds: sg.conds };
+      });
+
+      if (st.hoverPct != null) {
+        let bestIdx = 0, bestDist = Infinity;
+        segs.forEach(function (sg, idx) {
+          const dist = st.hoverPct < sg.x1 ? sg.x1 - st.hoverPct : st.hoverPct > sg.x2 ? st.hoverPct - sg.x2 : 0;
+          if (dist < bestDist) { bestDist = dist; bestIdx = idx; }
+        });
+        const sg = segs[bestIdx];
+        const c = cls[bestIdx];
+        const s = ready[bestIdx];
+        const nights = Math.max(1, s.nights || 1);
+        const frac = sg.x2 > sg.x1 ? Math.max(0, Math.min(1, (st.hoverPct - sg.x1) / (sg.x2 - sg.x1))) : 0;
+        const dayIdx = Math.max(0, Math.min(nights - 1, Math.round(frac * (nights - 1))));
+        hoverInfo = {
+          pct: st.hoverPct, y: sg.yMid,
+          name: BY_ID[s.cityId].name,
+          date: self.dateLabel(self.addDays(s.date, dayIdx)),
+          high: self.fmt(c.high), low: self.fmt(c.low),
+          absHigh: self.fmt(c.absHigh), absLow: self.fmt(c.absLow),
+          rain: c.rain + "%"
+        };
+      }
+    }
+
+    const suggestions = this.matchList().map(function (c) {
+      return { name: c.name, region: c.region, onPick: self.pick(c.id) };
+    });
+
+    const hint = !d ? "" : !d.cityId && !d.date ? "Pick a city and a date."
+      : !d.cityId ? "Pick a city from the list."
+      : !d.date ? "Choose a date for this stop."
+      : BY_ID[d.cityId].name + " · " + self.dateLabel(d.date);
+
+    const units = this.units();
+    const showDetails = st.showDetails !== false;
+    return Object.assign({}, this.handlers(), {
+      stops: stops, nextNum: st.stops.length + 1,
+      isEmpty: st.stops.length === 0 && !d,
+      showAddButton: st.stops.length > 0 && !d,
+      showTrailingEditor: !!(d && !d.targetId),
+      showClear: st.stops.length > 0,
+      showDetails: showDetails,
+      hasStops: st.stops.length > 0,
+      showAbout: !!st.showAbout,
+      toggleLabel: showDetails ? "Hide" : "Show",
+      chevronTransform: showDetails ? "rotate(0deg)" : "rotate(-90deg)",
+      showCollapsedHint: st.stops.length > 0 && !showDetails,
+      collapsedLabel: st.stops.length + (st.stops.length === 1 ? " stop" : " stops") + " hidden — showing trip overview only.",
+      hasSummary: cls.length > 0,
+      showChart: chartStops.length > 1,
+      chartStops: chartStops, rainPoints: rainPoints,
+      bandPoints: cls.length > 1 ? bandPoints : "", bestLinePoints: cls.length > 1 ? bestLinePoints : "",
+      absBandPoints: cls.length > 1 ? absBandPoints : "",
+      showTooltip: !!hoverInfo,
+      hoverPctVal: hoverInfo ? hoverInfo.pct : 0,
+      hoverDotY: hoverInfo ? hoverInfo.y : 0,
+      hoverName: hoverInfo ? hoverInfo.name : "",
+      hoverDate: hoverInfo ? hoverInfo.date : "",
+      hoverHigh: hoverInfo ? hoverInfo.high : "",
+      hoverLow: hoverInfo ? hoverInfo.low : "",
+      hoverAbsHigh: hoverInfo ? hoverInfo.absHigh : "",
+      hoverAbsLow: hoverInfo ? hoverInfo.absLow : "",
+      hoverRain: hoverInfo ? hoverInfo.rain : "",
+      tooltipTransform: hoverInfo ? (hoverInfo.pct < 18 ? "translateX(0%)" : hoverInfo.pct > 82 ? "translateX(-100%)" : "translateX(-50%)") : "translateX(-50%)",
+      sLow: sLow, sHigh: sHigh,
+      sCount: ready.length + (ready.length === 1 ? " stop" : " stops"),
+      isSunny: char === "sunny", isMixed: char === "mixed", isRainy: char === "rainy",
+      isC: units === "C", isF: units !== "C",
+      draftQuery: d ? d.query : "", draftDate: d ? d.date : "", draftNights: d ? d.nights : 1,
+      suggestions: suggestions,
+      showSuggestions: !!(d && suggestions.length && !d.cityId),
+      canSave: !!(d && d.cityId && d.date), cannotSave: !(d && d.cityId && d.date),
+      draftHint: hint
+    });
+  }
+}
+</script>
+</body>
+</html>

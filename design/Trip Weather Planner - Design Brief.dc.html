@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="./doc-page.js"></script>
+<style>
+  html, body { margin:0; padding:0; }
+  * { box-sizing:border-box; }
+  a { color:#3F6B5C; text-decoration:none; }
+  a:hover { color:#2F5245; text-decoration:underline; }
+  doc-page:not(:defined) { visibility:hidden; }
+  body, doc-page { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; color:#1B1917; }
+  h1 { font-size:26px; font-weight:600; letter-spacing:-0.015em; margin:0 0 4px; }
+  h2 { font-size:16px; font-weight:600; letter-spacing:-0.01em; margin:34px 0 12px; padding-top:14px; border-top:1px solid #E5E0D8; }
+  h3 { font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:#575049; margin:20px 0 8px; }
+  p { font-size:13.5px; line-height:1.6; color:#3B3731; margin:0 0 10px; text-wrap:pretty; }
+  ul, ol { margin:0 0 10px; padding-left:20px; }
+  li { font-size:13.5px; line-height:1.6; color:#3B3731; margin-bottom:4px; }
+  code { font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:12px; background:#F1EDE6; padding:1px 5px; border-radius:4px; }
+  table { border-collapse:collapse; width:100%; margin-bottom:14px; break-inside:avoid; }
+  th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:#8A837B; font-weight:600; padding:0 10px 6px 0; border-bottom:1px solid #DFD9CF; }
+  td { font-size:12.5px; color:#3B3731; padding:8px 10px 8px 0; border-bottom:1px solid #EFEBE3; vertical-align:top; }
+  .swatch { display:inline-block; width:14px; height:14px; border-radius:4px; border:1px solid rgba(0,0,0,.08); vertical-align:-2px; margin-right:6px; }
+  .callout { background:#FAF8F4; border:1px solid #EFEBE3; border-radius:10px; padding:14px 16px; margin:0 0 14px; break-inside:avoid; }
+  .callout p:last-child { margin-bottom:0; }
+</style>
+</helmet>
+
+<doc-page>
+  <div style="font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:#8A837B;font-weight:600;margin-bottom:8px">Design brief</div>
+  <h1>Trip Weather Planner</h1>
+  <p style="color:#6F6862">Working prototype (<code>Trip Weather Planner.dc.html</code>) handed off for production build. This brief covers intent, visual system, states, and behavior — read alongside the prototype, which is the source of truth for exact spacing/copy.</p>
+
+  <h2>1. What it does</h2>
+  <p>A single-page tool for checking expected weather across a multi-city trip. The user adds stops (city + date range), sees typical high/low/rain-chance per stop, and an overview card summarizing the trip's low/high, general character (sunny / mixed / rainy), and a range chart across all stops.</p>
+
+  <h2>2. Visual system</h2>
+  <h3>Color</h3>
+  <table>
+    <tr><th style="width:30%">Role</th><th>Value</th><th>Usage</th></tr>
+    <tr><td><span class="swatch" style="background:#F7F4EF"></span>Page background</td><td>#F7F4EF</td><td>App canvas, warm off-white</td></tr>
+    <tr><td><span class="swatch" style="background:#FFFFFF;border-color:#ddd"></span>Surface</td><td>#FFFFFF</td><td>Cards, modal, inputs</td></tr>
+    <tr><td><span class="swatch" style="background:#1B1917"></span>Text — primary</td><td>#1B1917</td><td>Headings, values</td></tr>
+    <tr><td><span class="swatch" style="background:#6F6862"></span>Text — secondary</td><td>#6F6862 / #575049</td><td>Subtitles, body copy</td></tr>
+    <tr><td><span class="swatch" style="background:#8A837B"></span>Text — tertiary / labels</td><td>#8A837B / #A39C93 / #B0A9A0</td><td>Eyebrow labels, muted metadata</td></tr>
+    <tr><td><span class="swatch" style="background:#DFD9CF"></span>Border</td><td>#DFD9CF / #E5E0D8 / #EFEBE3</td><td>Card & input borders, dividers</td></tr>
+    <tr><td><span class="swatch" style="background:#3F6B5C"></span>Accent (primary action)</td><td>#3F6B5C, hover #355A4D</td><td>Primary buttons, focus ring, forecast tag</td></tr>
+    <tr><td><span class="swatch" style="background:#C79A3B"></span>Sunny</td><td>badge #F2EFE2/#7A6A2E, icon #C79A3B</td><td>Sunny condition badge/icon</td></tr>
+    <tr><td><span class="swatch" style="background:#9B948A"></span>Cloudy / mixed</td><td>badge #EDEFF0/#575049, icon #9B948A</td><td>Mixed/cloudy condition badge/icon</td></tr>
+    <tr><td><span class="swatch" style="background:#8FA6AE"></span>Rainy</td><td>badge #E9EEF2/#33566B, icon #8FA6AE</td><td>Rainy condition badge/icon</td></tr>
+    <tr><td><span class="swatch" style="background:#A9B7BE"></span>Snowy</td><td>icon #A9B7BE / #7FA0B3</td><td>Snow condition icon (chart only)</td></tr>
+    <tr><td><span class="swatch" style="background:#8C4A2F"></span>Destructive text</td><td>#8C4A2F</td><td>"Delete stop" link</td></tr>
+  </table>
+  <p>Max 1–2 background tones; everything else is neutral + the single accent. Don't introduce new hues without checking against this palette.</p>
+
+  <h3>Type</h3>
+  <ul>
+    <li><strong>UI text:</strong> Helvetica Neue / Helvetica / Arial, sans-serif.</li>
+    <li><strong>Numeric data</strong> (temperatures, counts, dates in the trend tooltip): IBM Plex Mono, tabular numerals — always monospace so columns of numbers align.</li>
+    <li>Scale: page title 22px/600 · stat values 27–30px/500 mono · stop city name 17px/600 · body 13–14px · eyebrow labels 10.5–12px uppercase, tracked +0.05–0.11em, color #8A837B.</li>
+  </ul>
+
+  <h3>Shape & spacing</h3>
+  <ul>
+    <li>Content column: 780px max-width, centered.</li>
+    <li>Card radius 12–14px; pill/badge radius 999px; input & button radius 8–9px.</li>
+    <li>Cards: 1px border + very soft shadow (<code>0 1px 2px rgba(28,25,23,.04)</code>); the sticky summary card and open editors get a stronger shadow to read as "elevated."</li>
+    <li>No SVG hand-drawn illustration — icons are simple geometric marks (circles/rounded rects) only, consistent with the condition icon set already in the prototype.</li>
+  </ul>
+
+  <h2>3. Layout &amp; components</h2>
+
+  <h3>Header</h3>
+  <p>Title + one-line subtitle, left. Right-aligned: °C/°F segmented toggle, "Clear trip" (text link, only once stops exist), and an "i" About button (circular, opens a modal — see §5). Keep the subtitle as the single source of the "these are historical averages" disclaimer; don't duplicate it elsewhere.</p>
+
+  <h3>Trip summary card</h3>
+  <p>Sticky card at the top of the list, appears once ≥1 stop has loaded. Left-to-right: condition badge (Generally sunny / Mixed conditions / Mostly rainy, computed from average rain% across stops), then Trip low and Trip high stat pairs — all three top-aligned. Right: stop count. Below, once ≥2 stops: a range chart (absolute range band, avg min/max band, avg line, per-stop condition icons and city labels on the axis, hover/touch tooltip with avg + record range + rain chance for the nearest day).</p>
+
+  <h3>Trip stops list</h3>
+  <p>Collapsible section ("Trip stops" header with Hide/Show). Each stop is a numbered card with three mutually exclusive states:</p>
+  <table>
+    <tr><th style="width:18%">State</th><th>Trigger</th><th>Shows</th></tr>
+    <tr><td>Loading</td><td>Just added/edited, fetch in flight</td><td>Shimmer placeholders over the stat grid, "looking up averages…"</td></tr>
+    <tr><td>Ready</td><td>Data resolved</td><td>City, condition icon, nights + date range, region, source tag (Forecast · Nd out / Historical avg), typical high/low/rain%, edit button</td></tr>
+    <tr><td>Editing</td><td>User opened it, or the trailing "new stop" row</td><td>Location (autocomplete), date, nights fields; Cancel / Save; Delete stop (existing only)</td></tr>
+  </table>
+  <p>Trailing "+ Add stop" row when not editing; empty state (no stops) is a centered dashed card with a single "Add your first stop" CTA. When the list is collapsed, a one-line hint replaces it ("N stops hidden — showing trip overview only").</p>
+
+  <h3>About modal</h3>
+  <p>Opened from the header "i" button. Centered dialog over a scrim; click-outside or × closes it. Content: what the figures represent (historical averages, not forecast; near-term stops may blend forecast data) and a privacy note (trip saved locally only, not synced).</p>
+
+  <h2>4. Interaction notes</h2>
+  <ul>
+    <li><strong>Units:</strong> °C/°F toggle affects every temperature on the page instantly; persisted with the trip.</li>
+    <li><strong>Autocomplete:</strong> typing in Location filters a fixed city list by name-prefix or region-prefix, top 6 shown; Enter picks the top match, Escape cancels the editor.</li>
+    <li><strong>Adding a stop:</strong> new stop's default date auto-continues from the previous stop's date + nights, so a multi-city itinerary chains without re-typing dates.</li>
+    <li><strong>Chart:</strong> hover (desktop) or drag (touch) scrubs a vertical guide + tooltip showing the nearest stop's date-level detail.</li>
+    <li><strong>Persistence:</strong> stops + units saved to <code>localStorage</code> only — no account/sync.</li>
+  </ul>
+
+  <h2>5. Data &amp; logic — prototype vs. production</h2>
+  <div class="callout">
+    <p>The prototype fakes climate data so the UI can be evaluated without a live API. Production needs to swap this for a real source — the pieces below map roughly 1:1 to what a real backend should provide.</p>
+  </div>
+  <ul>
+    <li><strong>City list:</strong> prototype ships ~60 hardcoded cities with a name/region and a hand-tuned annual temperature curve + rainfall curve. Production needs a real geocoding/city-search endpoint.</li>
+    <li><strong>Climate model:</strong> a single cosine curve per city approximates seasonal high/low/rain%. Production should call a historical-climate-normals API keyed by lat/lon + day-of-year.</li>
+    <li><strong>Forecast vs. historical split:</strong> stops within <strong>15 days</strong> out are labeled "Forecast · Nd out" (small deterministic jitter added on top of the climate baseline to simulate real forecast data); anything further out is labeled "Historical avg." Production should use this same threshold to decide whether to call a short-range forecast API or fall back to the historical-normals API.</li>
+    <li><strong>Condition classification:</strong> sunny/partly/cloudy/rainy/snowy is derived purely from rain% (and freezing high, for snow) — no cloud-cover or wind data. Fine as a placeholder; revisit if a richer data source is wired in.</li>
+  </ul>
+
+  <h2>6. Edge cases to preserve</h2>
+  <ul>
+    <li>1 stop: no trend chart (needs ≥2 to be meaningful); summary card still shows low/high/badge.</li>
+    <li>Long city names truncate with an ellipsis on the chart axis only, never in the stop card.</li>
+    <li>Save button disables until both a city and a date are chosen; inline hint text tells the user what's missing.</li>
+    <li>Removing the stop currently being edited closes its editor.</li>
+  </ul>
+
+  <h2>7. Open questions for engineering</h2>
+  <ul>
+    <li>Real geocoding/city-search API — which provider, and does it return the region label format used here ("United Kingdom", "Türkiye", etc.)?</li>
+    <li>Climate-normals + short-range forecast data sources, and rate limits for a client-side search-as-you-type flow.</li>
+    <li>Should trips ever sync across devices, or is local-only persistence the intended final behavior?</li>
+  </ul>
+</doc-page>
+
+</x-dc>
+</body>
+</html>
