@@ -65,12 +65,22 @@ export function Header() {
                   <span className="sr-only">About</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-[420px]">
                 <DialogHeader>
-                  <DialogTitle>About</DialogTitle>
+                  <DialogTitle>About these figures</DialogTitle>
                 </DialogHeader>
-                <DialogDescription>
-                  About content coming soon. (Issue #11)
+                <DialogDescription
+                  render={<div className="space-y-2.5" />}
+                >
+                  <p>
+                    Figures are long-run historical averages for each stop's date range, not a
+                    forecast. Typical high/low reflect the usual range for that time of year;
+                    recent stops closer in time may blend in short-range forecast data.
+                  </p>
+                  <p>
+                    Your trip is saved in this browser only — it isn't synced or shared anywhere
+                    else.
+                  </p>
                 </DialogDescription>
               </DialogContent>
             </Dialog>
