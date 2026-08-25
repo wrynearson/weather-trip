@@ -69,12 +69,16 @@ export function StopCard({
     )
   }
 
-  if (dayStatsState === 'error') {
+  if (dayStatsState === 'error' || dayStatsState === 'rate-limited') {
+    const message =
+      dayStatsState === 'rate-limited'
+        ? "We're being rate-limited by the weather service. Wait a moment, then"
+        : "Couldn't load weather for this stop."
     return (
       <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="font-medium">{stop.city}</div>
         <div className="mt-1 text-sm text-muted-foreground">
-          Couldn't load weather for this stop.{' '}
+          {message}{' '}
           <button
             type="button"
             onClick={onRetry}

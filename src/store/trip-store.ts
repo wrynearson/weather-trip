@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { DayStats, Stop, Units } from '@/types'
 
-export type DayStatsState = DayStats[] | 'loading' | 'error'
+export type DayStatsState = DayStats[] | 'loading' | 'error' | 'rate-limited'
 
 type TripState = {
   stops: Stop[]

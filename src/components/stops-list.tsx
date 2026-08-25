@@ -14,11 +14,14 @@ export function StopsList() {
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
-    for (const stop of stops) {
-      if (dayStats[stop.id] === undefined && stop.lat !== 0) {
-        fetchStopWeather(stop)
-      }
-    }
+    // Stagger initial fetches (e.g. on page load with several saved stops)
+    // instead of firing them all at once, which is the likeliest way to
+    // trip the weather API's rate limit.
+    const timers = stops
+      .filter((stop) => dayStats[stop.id] === undefined && stop.lat !== 0)
+      .map((stop, i) => setTimeout(() => fetchStopWeather(stop), i * 200))
+
+    return () => timers.forEach(clearTimeout)
     // Only re-check when the stop list itself changes shape; saves trigger
     // their own fetch directly instead of relying on this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps

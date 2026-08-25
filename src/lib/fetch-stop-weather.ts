@@ -1,5 +1,6 @@
 import type { Stop } from '@/types'
 import { getDayStats } from '@/forecast'
+import { HttpError } from '@/open-meteo'
 import { useTripStore } from '@/store/trip-store'
 
 export async function fetchStopWeather(stop: Stop): Promise<void> {
@@ -8,7 +9,7 @@ export async function fetchStopWeather(stop: Stop): Promise<void> {
   try {
     const days = await getDayStats(stop)
     setDayStats(stop.id, days)
-  } catch {
-    setDayStats(stop.id, 'error')
+  } catch (error) {
+    setDayStats(stop.id, error instanceof HttpError && error.status === 429 ? 'rate-limited' : 'error')
   }
 }

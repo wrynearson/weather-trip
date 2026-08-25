@@ -14,6 +14,15 @@ type OpenMeteoDailyResponse = {
   }
 }
 
+export class HttpError extends Error {
+  status: number
+
+  constructor(status: number) {
+    super(`Open-Meteo request failed: ${status}`)
+    this.status = status
+  }
+}
+
 export function cacheKey(lat: number, lon: number): string {
   return `${lat.toFixed(2)},${lon.toFixed(2)}`
 }
@@ -21,7 +30,7 @@ export function cacheKey(lat: number, lon: number): string {
 export async function fetchDailySeries(url: URL): Promise<DailySeries> {
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Open-Meteo request failed: ${response.status}`)
+    throw new HttpError(response.status)
   }
   const data = (await response.json()) as OpenMeteoDailyResponse
   return {
