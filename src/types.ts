@@ -17,6 +17,7 @@ export type DayStats = {
   recordHigh: number
   recordLow: number
   source: 'forecast' | 'historical'
+  elevationM: number
 }
 
 export type Units = 'C' | 'F'

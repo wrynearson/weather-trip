@@ -68,6 +68,7 @@ export function aggregateHistoricalDay(series: DailySeries, date: string): DaySt
     recordHigh: highs.length ? Math.max(...highs) : NaN,
     recordLow: lows.length ? Math.min(...lows) : NaN,
     source: 'historical',
+    elevationM: series.elevationM,
   }
 }
 

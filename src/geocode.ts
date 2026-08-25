@@ -12,6 +12,8 @@ type NominatimAddress = {
   province?: string
   state?: string
   country?: string
+  country_code?: string
+  'ISO3166-2-lvl4'?: string
 }
 
 type NominatimResult = {
@@ -80,8 +82,22 @@ function toGeocodeResult(raw: NominatimResult): GeocodeResult {
 
   return {
     name,
-    region: address.country ?? '',
+    region: [admin1Label(address), address.country].filter(Boolean).join(', '),
     lat: Number(raw.lat),
     lon: Number(raw.lon),
   }
+}
+
+// Distinguishes same-named places (e.g. "Santa Cruz" in CA vs. NM vs. Bolivia)
+// by adding the state/province. US results get the familiar 2-letter postal
+// abbreviation (from the ISO 3166-2 code Nominatim returns); everywhere else
+// that abbreviation isn't widely recognized, so the full name is used instead.
+function admin1Label(address: NominatimAddress): string | undefined {
+  const state = address.state ?? address.province
+  if (!state) return undefined
+  if (address.country_code === 'us') {
+    const code = address['ISO3166-2-lvl4']?.split('-')[1]
+    if (code?.length === 2) return code
+  }
+  return state
 }

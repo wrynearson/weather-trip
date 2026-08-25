@@ -62,6 +62,7 @@ function aggregateForecastDay(series: DailySeries, date: string): DayStats {
     recordHigh: high ?? NaN,
     recordLow: low ?? NaN,
     source: 'forecast',
+    elevationM: series.elevationM,
   }
 }
 

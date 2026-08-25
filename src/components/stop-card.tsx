@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { ConditionIcon } from '@/components/condition-icon'
 import { StopEditor, type StopDraft } from '@/components/stop-editor'
 import { classifyStopCondition } from '@/condition'
-import { formatTemp } from '@/lib/units'
+import { formatElevation, formatTemp } from '@/lib/units'
 import { formatDateRange, formatNights } from '@/lib/dates'
 import { daysUntil } from '@/forecast'
 
@@ -114,7 +114,11 @@ export function StopCard({
               <span className="font-mono">{formatDateRange(stop.startDate, stop.nights)}</span>
             </span>
           </div>
-          <div className="mt-1.5 text-xs text-muted-foreground">{stop.region}</div>
+          <div className="mt-1.5 text-xs text-muted-foreground">
+            {stop.region}
+            {stop.region && ' · '}
+            {formatElevation(days[0].elevationM, units)} elev.
+          </div>
         </div>
         <Badge variant={source === 'forecast' ? 'default' : 'secondary'} className="shrink-0 whitespace-nowrap">
           {sourceLabel}
