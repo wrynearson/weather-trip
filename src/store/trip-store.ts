@@ -12,6 +12,7 @@ type TripState = {
   updateStop: (id: string, patch: Partial<Omit<Stop, 'id'>>) => void
   removeStop: (id: string) => void
   setUnits: (units: Units) => void
+  clearTrip: () => void
 }
 
 export const useTripStore = create<TripState>()(
@@ -55,6 +56,8 @@ export const useTripStore = create<TripState>()(
       },
 
       setUnits: (units) => set({ units }),
+
+      clearTrip: () => set({ stops: [], dayStats: {} }),
     }),
     {
       name: 'weather-trip:v1',
