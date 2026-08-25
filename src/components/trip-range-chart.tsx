@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Area, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { DayStats, Stop, Units } from '@/types'
 import type { DayStatsState } from '@/store/trip-store'
 import { ConditionIcon } from '@/components/condition-icon'
@@ -21,6 +21,7 @@ type StopSpan = {
   stopName: string
   dayCount: number
   condition: Condition
+  startIndex: number
 }
 
 function buildChartData(stops: Stop[], dayStats: Record<string, DayStatsState>) {
@@ -32,6 +33,7 @@ function buildChartData(stops: Stop[], dayStats: Record<string, DayStatsState>) 
     const days = dayStats[stop.id]
     if (!Array.isArray(days) || days.length === 0) continue
 
+    const startIndex = index
     for (const day of days) {
       points.push({
         ...day,
@@ -51,10 +53,21 @@ function buildChartData(stops: Stop[], dayStats: Record<string, DayStatsState>) 
       stopName: stop.city,
       dayCount: days.length,
       condition: classifyStopCondition(days),
+      startIndex,
     })
   }
 
-  return { points, spans }
+  return { points, spans, totalDays: index }
+}
+
+// Rounds the visible temperature extremes out to the nearest 10 (e.g. a
+// 15-35 range becomes a 10-40 axis) so the background scale reads in tidy
+// increments instead of the exact data bounds.
+function computeAxisBounds(points: ChartDatum[]): { min: number; max: number } {
+  if (points.length === 0) return { min: 0, max: 10 }
+  const min = Math.floor(Math.min(...points.map((p) => p.recordLow)) / 10) * 10
+  const max = Math.ceil(Math.max(...points.map((p) => p.recordHigh)) / 10) * 10
+  return { min, max: max > min ? max : min + 10 }
 }
 
 function ChartTooltip({
@@ -99,7 +112,13 @@ export function TripRangeChart({
   dayStats: Record<string, DayStatsState>
   units: Units
 }) {
-  const { points, spans } = useMemo(() => buildChartData(stops, dayStats), [stops, dayStats])
+  const { points, spans, totalDays } = useMemo(() => buildChartData(stops, dayStats), [stops, dayStats])
+  const axisBounds = useMemo(() => computeAxisBounds(points), [points])
+  const axisTicks = useMemo(() => {
+    const step = 10
+    const count = Math.round((axisBounds.max - axisBounds.min) / step) + 1
+    return Array.from({ length: count }, (_, i) => axisBounds.min + i * step)
+  }, [axisBounds])
 
   if (spans.length < 2) return null
 
@@ -107,8 +126,17 @@ export function TripRangeChart({
     <div className="mt-3.5 rounded-lg border border-border bg-muted/40 p-3">
       <ResponsiveContainer width="100%" height={120}>
         <ComposedChart data={points} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+          <CartesianGrid horizontal vertical={false} stroke="var(--border)" strokeDasharray="2 2" />
           <XAxis dataKey="index" type="number" domain={[0, points.length - 1]} hide />
-          <YAxis hide domain={['dataMin - 2', 'dataMax + 2']} />
+          <YAxis
+            domain={[axisBounds.min, axisBounds.max]}
+            ticks={axisTicks}
+            axisLine={false}
+            tickLine={false}
+            width={34}
+            tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }}
+            tickFormatter={(value: number) => formatTemp(value, units)}
+          />
           <Tooltip
             content={<ChartTooltip units={units} />}
             cursor={{ stroke: 'var(--border)', strokeDasharray: '2 2' }}
@@ -135,18 +163,27 @@ export function TripRangeChart({
         </ComposedChart>
       </ResponsiveContainer>
 
-      <div className="mt-1.5 flex">
+      <div className="flex">
         {spans.map((span) => (
           <div
             key={span.stopId}
-            className="flex min-w-0 flex-col items-center gap-0.5 overflow-hidden"
+            className="flex min-w-0 flex-col items-center overflow-hidden"
             style={{ flexGrow: span.dayCount, flexBasis: 0 }}
           >
             <ConditionIcon condition={span.condition} className="size-3.5" />
-            <span className="w-full truncate text-center text-[10px] font-medium text-muted-foreground">
-              {span.stopName}
-            </span>
           </div>
+        ))}
+      </div>
+
+      <div className="relative h-[68px]">
+        {spans.map((span) => (
+          <span
+            key={span.stopId}
+            className="absolute top-0.5 origin-top-left rotate-45 truncate text-[10px] font-medium text-muted-foreground"
+            style={{ left: `${((span.startIndex + span.dayCount / 2) / totalDays) * 100}%`, maxWidth: '90px' }}
+          >
+            {span.stopName}
+          </span>
         ))}
       </div>
 
