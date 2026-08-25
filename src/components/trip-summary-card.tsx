@@ -1,6 +1,7 @@
 import { useTripStore } from '@/store/trip-store'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { TripRangeChart } from '@/components/trip-range-chart'
 import { classifyTrip, TRIP_BADGE_LABEL, type TripBadge } from '@/condition'
 import { formatTemp } from '@/lib/units'
 import type { DayStats } from '@/types'
@@ -26,9 +27,9 @@ export function TripSummaryCard() {
   const high = Math.max(...allDays.map((day) => day.avgHigh))
 
   return (
-    <>
-      <Card className="sticky top-0 z-10 shadow-lg">
-        <CardContent className="flex items-start justify-between gap-4">
+    <Card className="sticky top-0 z-10 shadow-lg">
+      <CardContent>
+        <div className="flex items-start justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4">
             <Badge variant={BADGE_VARIANT[badge]}>{TRIP_BADGE_LABEL[badge]}</Badge>
             <div className="flex items-baseline gap-1.5 text-sm">
@@ -43,9 +44,9 @@ export function TripSummaryCard() {
           <div className="shrink-0 text-sm text-muted-foreground">
             {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
           </div>
-        </CardContent>
-      </Card>
-      {/* Range chart (issue #9) renders here once >=2 stops exist */}
-    </>
+        </div>
+        <TripRangeChart stops={stops} dayStats={dayStats} units={units} />
+      </CardContent>
+    </Card>
   )
 }
