@@ -52,6 +52,9 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
     if (e.key === 'Enter' && suggestions.length > 0) {
       e.preventDefault()
       pickSuggestion(suggestions[0])
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      onCancel()
     }
   }
 

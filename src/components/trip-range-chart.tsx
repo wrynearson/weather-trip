@@ -139,11 +139,13 @@ export function TripRangeChart({
         {spans.map((span) => (
           <div
             key={span.stopId}
-            className="flex flex-col items-center gap-0.5 overflow-hidden"
+            className="flex min-w-0 flex-col items-center gap-0.5 overflow-hidden"
             style={{ flexGrow: span.dayCount, flexBasis: 0 }}
           >
             <ConditionIcon condition={span.condition} className="size-3.5" />
-            <span className="truncate text-[10px] font-medium text-muted-foreground">{span.stopName}</span>
+            <span className="w-full truncate text-center text-[10px] font-medium text-muted-foreground">
+              {span.stopName}
+            </span>
           </div>
         ))}
       </div>
