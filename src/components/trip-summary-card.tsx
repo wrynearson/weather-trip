@@ -25,6 +25,10 @@ export function TripSummaryCard() {
       <CardContent>
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              {allDays.length} {allDays.length === 1 ? 'day' : 'days'} · {stops.length}{' '}
+              {stops.length === 1 ? 'stop' : 'stops'}
+            </div>
             <span className="flex items-center gap-1">
               {topConditions.map((condition) => (
                 <ConditionIcon key={condition} condition={condition} title={CONDITION_LABEL[condition]} />
@@ -39,12 +43,7 @@ export function TripSummaryCard() {
               <span className="font-mono font-medium">{formatTemp(high, units)}</span>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-3">
-            {shouldShowTripRangeChart(stops, dayStats) && <ChartLegend />}
-            <div className="text-sm text-muted-foreground">
-              {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
-            </div>
-          </div>
+          <div className="shrink-0">{shouldShowTripRangeChart(stops, dayStats) && <ChartLegend />}</div>
         </div>
         <TripRangeChart stops={stops} dayStats={dayStats} units={units} />
       </CardContent>
