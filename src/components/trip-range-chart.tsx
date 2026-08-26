@@ -174,10 +174,14 @@ function ChartTooltip({
       <div className="mt-1.5 flex gap-3 font-mono text-xs">
         <span>
           {datum.source === 'historical' && <span className="text-muted-foreground">avg</span>}{' '}
-          {formatTemp(datum.avgLow, units)}–{formatTemp(datum.avgHigh, units)}
+          {formatTemp(datum.avgLow, units)}
+          <span className="mx-0.5">·</span>
+          {formatTemp(datum.avgHigh, units)}
         </span>
         <span>
-          <span className="text-muted-foreground">rec</span> {formatTemp(datum.recordLow, units)}–
+          <span className="text-muted-foreground">{datum.source === 'forecast' ? 'norm' : 'range'}</span>{' '}
+          {formatTemp(datum.recordLow, units)}
+          <span className="mx-0.5">·</span>
           {formatTemp(datum.recordHigh, units)}
         </span>
       </div>
@@ -192,7 +196,7 @@ export function ChartLegend() {
   return (
     <div className="flex items-center gap-3 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
       <span className="flex items-center gap-1">
-        <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/30" /> absolute range
+        <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/30" /> historical range
       </span>
       <span className="flex items-center gap-1">
         <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/60" /> avg min/max
