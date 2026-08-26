@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ConditionIcon } from '@/components/condition-icon'
 import { StopEditor, type StopDraft } from '@/components/stop-editor'
-import { classifyStopCondition } from '@/condition'
+import { CONDITION_LABEL, rankStopConditions } from '@/condition'
 import { formatElevation, formatTemp } from '@/lib/units'
 import { formatDateRange, formatNights } from '@/lib/dates'
 import { daysUntil } from '@/forecast'
@@ -95,7 +95,7 @@ export function StopCard({
   const avgHigh = days.reduce((sum, d) => sum + d.avgHigh, 0) / days.length
   const avgLow = days.reduce((sum, d) => sum + d.avgLow, 0) / days.length
   const wetDayProbability = days.reduce((sum, d) => sum + d.wetDayProbability, 0) / days.length
-  const condition = classifyStopCondition(days)
+  const topConditions = rankStopConditions(days)
   const source = days[0].source
   const sourceLabel = source === 'forecast' ? `Forecast · ${daysUntil(stop.startDate)}d out` : 'Historical avg'
 
@@ -105,7 +105,11 @@ export function StopCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-lg font-semibold tracking-tight">{stop.city}</span>
-            <ConditionIcon condition={condition} />
+            <span className="flex items-center gap-1">
+              {topConditions.map((condition) => (
+                <ConditionIcon key={condition} condition={condition} title={CONDITION_LABEL[condition]} />
+              ))}
+            </span>
             <span className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="text-xs font-medium tracking-wide text-muted-foreground/80 uppercase">
                 {formatNights(stop.nights)}
@@ -145,7 +149,7 @@ export function StopCard({
           </div>
           <div>
             <div className="text-[10.5px] font-semibold tracking-wider text-muted-foreground uppercase">
-              Rain chance
+              Precipitation chance
             </div>
             <div className="mt-0.5 font-mono text-2xl font-medium tracking-tight text-muted-foreground">
               {Math.round(wetDayProbability * 100)}%

@@ -3,6 +3,7 @@ export type DailySeries = {
   tMax: (number | null)[]
   tMin: (number | null)[]
   precip: (number | null)[]
+  weatherCode: (number | null)[]
   elevationM: number
 }
 
@@ -13,6 +14,7 @@ type OpenMeteoDailyResponse = {
     temperature_2m_max: (number | null)[]
     temperature_2m_min: (number | null)[]
     precipitation_sum: (number | null)[]
+    weathercode: (number | null)[]
   }
 }
 
@@ -40,6 +42,7 @@ export async function fetchDailySeries(url: URL): Promise<DailySeries> {
     tMax: data.daily.temperature_2m_max,
     tMin: data.daily.temperature_2m_min,
     precip: data.daily.precipitation_sum,
+    weatherCode: data.daily.weathercode,
     elevationM: data.elevation,
   }
 }

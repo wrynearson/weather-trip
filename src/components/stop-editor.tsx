@@ -31,8 +31,9 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
   const [picked, setPicked] = useState<GeocodeResult | null>(initial.picked)
   const [suggestions, setSuggestions] = useState<GeocodeResult[]>([])
   const [startDate, setStartDate] = useState(initial.startDate)
-  const [nights, setNights] = useState(initial.nights)
+  const [nightsInput, setNightsInput] = useState(String(initial.nights))
 
+  const nights = Math.max(1, Number(nightsInput) || 1)
   const canSave = picked !== null && startDate !== ''
   const hint = !picked ? 'Search for a city.' : !startDate ? 'Choose a date for this stop.' : ''
 
@@ -44,7 +45,12 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
 
   function handleQueryChange(value: string) {
     setQuery(value)
-    setPicked(null)
+    // Some mobile keyboards re-fire an input event right after a suggestion
+    // is tapped (autocomplete/predictive text), with the same text that was
+    // just programmatically set — don't drop the just-made pick for that.
+    if (picked && value !== picked.name) {
+      setPicked(null)
+    }
     searchLocations(value).then(setSuggestions)
   }
 
@@ -66,7 +72,7 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
       lat: picked.lat,
       lon: picked.lon,
       startDate,
-      nights: Math.max(1, nights),
+      nights,
     })
   }
 
@@ -88,7 +94,7 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="relative flex flex-col gap-1.5">
+        <div className="relative flex min-w-0 flex-col gap-1.5">
           <Label htmlFor="stop-location">Location</Label>
           <Input
             id="stop-location"
@@ -115,7 +121,7 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
           )}
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <Label htmlFor="stop-date">Date</Label>
           <Input
             id="stop-date"
@@ -125,14 +131,14 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
           />
         </div>
 
-        <div className="flex flex-col gap-1.5">
+        <div className="flex min-w-0 flex-col gap-1.5">
           <Label htmlFor="stop-nights">Nights here</Label>
           <Input
             id="stop-nights"
             type="number"
             min={1}
-            value={nights}
-            onChange={(e) => setNights(Number(e.target.value))}
+            value={nightsInput}
+            onChange={(e) => setNightsInput(e.target.value)}
           />
         </div>
       </div>

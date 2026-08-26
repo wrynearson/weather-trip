@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { DayStats, Stop, Units } from '@/types'
 import type { DayStatsState } from '@/store/trip-store'
-import { ConditionIcon } from '@/components/condition-icon'
-import { classifyStopCondition, type Condition } from '@/condition'
+import { CONDITION_ICON, ConditionIcon } from '@/components/condition-icon'
+import { Badge } from '@/components/ui/badge'
+import { classifyDay, CONDITION_LABEL, type Condition } from '@/condition'
 import { formatTemp } from '@/lib/units'
 
 type ChartDatum = DayStats & {
@@ -20,7 +21,6 @@ type StopSpan = {
   stopId: string
   stopName: string
   dayCount: number
-  condition: Condition
   startIndex: number
 }
 
@@ -52,12 +52,85 @@ function buildChartData(stops: Stop[], dayStats: Record<string, DayStatsState>) 
       stopId: stop.id,
       stopName: stop.city,
       dayCount: days.length,
-      condition: classifyStopCondition(days),
       startIndex,
     })
   }
 
   return { points, spans, totalDays: index }
+}
+
+export function shouldShowTripRangeChart(stops: Stop[], dayStats: Record<string, DayStatsState>): boolean {
+  return stops.filter((stop) => Array.isArray(dayStats[stop.id]) && dayStats[stop.id]!.length > 0).length >= 2
+}
+
+type ConditionGroup = {
+  condition: Condition
+  startIndex: number
+  endIndex: number
+}
+
+// Collapses consecutive days that render the same icon into a single group,
+// so the icon row shows one icon per visible weather change instead of one
+// per day (or one per subtle intensity change, e.g. slight vs moderate rain,
+// that wouldn't look any different anyway). Groups can span a stop boundary —
+// this is a trip-wide overview, so a run of clear days that happens to
+// straddle two stops still reads as one icon.
+function buildConditionGroups(points: ChartDatum[]): ConditionGroup[] {
+  const groups: ConditionGroup[] = []
+  for (const point of points) {
+    const condition = classifyDay(point)
+    const icon = CONDITION_ICON[condition]
+    const last = groups[groups.length - 1]
+    if (last && CONDITION_ICON[last.condition] === icon && last.endIndex === point.index - 1) {
+      last.endIndex = point.index
+    } else {
+      groups.push({ condition, startIndex: point.index, endIndex: point.index })
+    }
+  }
+  return groups
+}
+
+// Recharts reserves this many px on the left for the y-axis tick labels, so
+// the plotted line only spans the remaining width — any overlay positioned
+// by raw percentage-of-container would drift left of the actual data.
+const Y_AXIS_WIDTH = 34
+
+// Converts a data index (0 to totalDays - 1) to a CSS `left` value that lines
+// up with where ComposedChart's `type="number"` x-axis actually plots it:
+// index 0 at the left edge of the plot area, the last index at the right edge.
+function indexToLeft(index: number, totalDays: number): string {
+  const frac = totalDays > 1 ? index / (totalDays - 1) : 0
+  return `calc(${Y_AXIS_WIDTH}px + (100% - ${Y_AXIS_WIDTH}px) * ${frac})`
+}
+
+// Same positioning math as indexToLeft, but resolved to an actual pixel
+// number (given a measured container width) so we can compare distances
+// between icons instead of just placing them.
+function indexToLeftPx(index: number, totalDays: number, width: number): number {
+  const frac = totalDays > 1 ? index / (totalDays - 1) : 0
+  return Y_AXIS_WIDTH + (width - Y_AXIS_WIDTH) * frac
+}
+
+// Icons are ~14px wide; require a bit more than that between centers so
+// adjacent icons never visually touch, let alone overlap.
+const ICON_MIN_GAP_PX = 22
+
+// On long trips, many condition changes can pack more icon centers than fit
+// without overlapping. Walk left to right and drop any icon that would land
+// too close to the last one we kept — favors the change and its neighbors
+// reading distinctly over showing every single change.
+function thinConditionGroups(groups: ConditionGroup[], totalDays: number, width: number): ConditionGroup[] {
+  if (width <= 0) return groups
+  const kept: ConditionGroup[] = []
+  let lastCenterPx = -Infinity
+  for (const group of groups) {
+    const centerPx = indexToLeftPx((group.startIndex + group.endIndex) / 2, totalDays, width)
+    if (centerPx - lastCenterPx >= ICON_MIN_GAP_PX) {
+      kept.push(group)
+      lastCenterPx = centerPx
+    }
+  }
+  return kept
 }
 
 // Rounds the visible temperature extremes out to the nearest 10 (e.g. a
@@ -81,11 +154,25 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null
   const datum = payload[0].payload
+  const condition = classifyDay(datum)
 
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-lg">
-      <div className="text-sm font-semibold">{datum.stopName}</div>
-      <div className="text-xs text-muted-foreground">{datum.date}</div>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-semibold">{datum.stopName}</div>
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <ConditionIcon condition={condition} />
+              {CONDITION_LABEL[condition]}
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">{datum.date}</div>
+        </div>
+        <Badge variant={datum.source === 'forecast' ? 'default' : 'secondary'} className="shrink-0 text-[9px]">
+          {datum.source === 'forecast' ? 'Forecast' : 'Historical'}
+        </Badge>
+      </div>
       <div className="mt-1.5 flex gap-3 font-mono text-xs">
         <span>
           <span className="text-muted-foreground">avg</span> {formatTemp(datum.avgLow, units)}–
@@ -97,8 +184,24 @@ function ChartTooltip({
         </span>
       </div>
       <div className="mt-1 text-xs text-muted-foreground">
-        {Math.round(datum.wetDayProbability * 100)}% rain chance
+        {Math.round(datum.wetDayProbability * 100)}% precipitation chance
       </div>
+    </div>
+  )
+}
+
+export function ChartLegend() {
+  return (
+    <div className="flex items-center gap-3 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+      <span className="flex items-center gap-1">
+        <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/30" /> absolute range
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/60" /> avg min/max
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="inline-block h-px w-2 bg-muted-foreground" /> avg
+      </span>
     </div>
   )
 }
@@ -119,11 +222,39 @@ export function TripRangeChart({
     const count = Math.round((axisBounds.max - axisBounds.min) / step) + 1
     return Array.from({ length: count }, (_, i) => axisBounds.min + i * step)
   }, [axisBounds])
+  const conditionGroups = useMemo(() => buildConditionGroups(points), [points])
+
+  const iconRowRef = useRef<HTMLDivElement>(null)
+  const [iconRowWidth, setIconRowWidth] = useState(0)
+  useEffect(() => {
+    const el = iconRowRef.current
+    if (!el) return
+    const observer = new ResizeObserver((entries) => setIconRowWidth(entries[0].contentRect.width))
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  const visibleConditionGroups = useMemo(
+    () => thinConditionGroups(conditionGroups, totalDays, iconRowWidth),
+    [conditionGroups, totalDays, iconRowWidth],
+  )
 
   if (spans.length < 2) return null
 
   return (
     <div className="mt-3.5 rounded-lg border border-border bg-muted/40 p-3">
+      <div ref={iconRowRef} className="relative h-4">
+        {visibleConditionGroups.map((group) => (
+          <span
+            key={group.startIndex}
+            className="absolute top-0 -translate-x-1/2"
+            style={{ left: indexToLeft((group.startIndex + group.endIndex) / 2, totalDays) }}
+          >
+            <ConditionIcon condition={group.condition} className="size-3.5" />
+          </span>
+        ))}
+      </div>
+
       <ResponsiveContainer width="100%" height={120}>
         <ComposedChart data={points} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
           <CartesianGrid horizontal vertical={false} stroke="var(--border)" strokeDasharray="2 2" />
@@ -133,7 +264,7 @@ export function TripRangeChart({
             ticks={axisTicks}
             axisLine={false}
             tickLine={false}
-            width={34}
+            width={Y_AXIS_WIDTH}
             tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }}
             tickFormatter={(value: number) => formatTemp(value, units)}
           />
@@ -163,40 +294,17 @@ export function TripRangeChart({
         </ComposedChart>
       </ResponsiveContainer>
 
-      <div className="flex">
-        {spans.map((span) => (
-          <div
-            key={span.stopId}
-            className="flex min-w-0 flex-col items-center overflow-hidden"
-            style={{ flexGrow: span.dayCount, flexBasis: 0 }}
-          >
-            <ConditionIcon condition={span.condition} className="size-3.5" />
-          </div>
-        ))}
-      </div>
-
-      <div className="relative h-[68px]">
-        {spans.map((span) => (
+      <div className="relative h-4">
+        {spans.map((span, i) => (
           <span
             key={span.stopId}
-            className="absolute top-0.5 origin-top-left rotate-45 truncate text-[10px] font-medium text-muted-foreground"
-            style={{ left: `${((span.startIndex + span.dayCount / 2) / totalDays) * 100}%`, maxWidth: '90px' }}
+            className="absolute top-0 -translate-x-1/2 text-[10px] font-medium tabular-nums text-muted-foreground"
+            style={{ left: indexToLeft(span.startIndex + (span.dayCount - 1) / 2, totalDays) }}
+            title={span.stopName}
           >
-            {span.stopName}
+            {i + 1}
           </span>
         ))}
-      </div>
-
-      <div className="mt-1.5 flex justify-end gap-3 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-        <span className="flex items-center gap-1">
-          <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/30" /> absolute range
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/60" /> avg min/max
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-px w-2 bg-muted-foreground" /> avg
-        </span>
       </div>
     </div>
   )

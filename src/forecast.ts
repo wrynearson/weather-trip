@@ -17,7 +17,7 @@ export function fetchForecastSeries(lat: number, lon: number): Promise<DailySeri
   const url = new URL(FORECAST_URL)
   url.searchParams.set('latitude', String(lat))
   url.searchParams.set('longitude', String(lon))
-  url.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min,precipitation_sum')
+  url.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode')
   url.searchParams.set('forecast_days', String(FORECAST_DAYS))
   url.searchParams.set('timezone', 'auto')
 
@@ -51,6 +51,7 @@ function aggregateForecastDay(series: DailySeries, date: string): DayStats {
   const high = index >= 0 ? series.tMax[index] : null
   const low = index >= 0 ? series.tMin[index] : null
   const precip = index >= 0 ? series.precip[index] : null
+  const weatherCode = index >= 0 ? series.weatherCode[index] : null
 
   return {
     date,
@@ -58,6 +59,7 @@ function aggregateForecastDay(series: DailySeries, date: string): DayStats {
     avgLow: low ?? NaN,
     precipMean: precip ?? NaN,
     wetDayProbability: precip != null ? Number(precip > WET_DAY_THRESHOLD_MM) : NaN,
+    weatherCode: weatherCode ?? NaN,
     // a single forecast day has no year-over-year spread, so record == avg
     recordHigh: high ?? NaN,
     recordLow: low ?? NaN,

@@ -1,30 +1,64 @@
-import { Cloud, CloudRain, CloudSnow, CloudSun, Sun } from 'lucide-react'
+import {
+  Cloud,
+  CloudDrizzle,
+  CloudFog,
+  CloudHail,
+  CloudLightning,
+  CloudRain,
+  CloudRainWind,
+  CloudSnow,
+  CloudSun,
+  CloudSunRain,
+  Snowflake,
+  Sun,
+} from 'lucide-react'
 import type { Condition } from '@/condition'
 import { cn } from '@/lib/utils'
 
-const ICON: Record<Condition, typeof Sun> = {
-  sunny: Sun,
-  partly: CloudSun,
-  cloudy: Cloud,
-  rainy: CloudRain,
-  snowy: CloudSnow,
-}
-
-const COLOR: Record<Condition, string> = {
-  sunny: 'text-amber-500',
-  partly: 'text-amber-500',
-  cloudy: 'text-muted-foreground',
-  rainy: 'text-sky-600',
-  snowy: 'text-sky-500',
+export const CONDITION_ICON: Record<Condition, typeof Sun> = {
+  'clear-sky': Sun,
+  'mainly-clear': Sun,
+  'partly-cloudy': CloudSun,
+  overcast: Cloud,
+  fog: CloudFog,
+  'rime-fog': CloudFog,
+  'drizzle-light': CloudDrizzle,
+  'drizzle-moderate': CloudDrizzle,
+  'drizzle-dense': CloudDrizzle,
+  'freezing-drizzle-light': CloudHail,
+  'freezing-drizzle-dense': CloudHail,
+  'rain-slight': CloudRain,
+  'rain-moderate': CloudRain,
+  'rain-heavy': CloudRainWind,
+  'freezing-rain-light': CloudHail,
+  'freezing-rain-heavy': CloudHail,
+  'snow-slight': CloudSnow,
+  'snow-moderate': CloudSnow,
+  'snow-heavy': Snowflake,
+  'snow-grains': Snowflake,
+  'rain-showers-slight': CloudSunRain,
+  'rain-showers-moderate': CloudRain,
+  'rain-showers-violent': CloudRainWind,
+  'snow-showers-slight': CloudSnow,
+  'snow-showers-heavy': Snowflake,
+  thunderstorm: CloudLightning,
+  'thunderstorm-hail-slight': CloudLightning,
+  'thunderstorm-hail-heavy': CloudLightning,
 }
 
 export function ConditionIcon({
   condition,
   className,
+  title,
 }: {
   condition: Condition
   className?: string
+  title?: string
 }) {
-  const Icon = ICON[condition]
-  return <Icon className={cn('size-4', COLOR[condition], className)} />
+  const Icon = CONDITION_ICON[condition]
+  return (
+    <span title={title}>
+      <Icon className={cn('size-4 text-muted-foreground', className)} />
+    </span>
+  )
 }

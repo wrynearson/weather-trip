@@ -1,7 +1,7 @@
 import { useTripStore } from '@/store/trip-store'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { TripRangeChart } from '@/components/trip-range-chart'
+import { ChartLegend, TripRangeChart, shouldShowTripRangeChart } from '@/components/trip-range-chart'
 import { classifyTrip, TRIP_BADGE_LABEL, type TripBadge } from '@/condition'
 import { formatTemp } from '@/lib/units'
 import type { DayStats } from '@/types'
@@ -41,8 +41,11 @@ export function TripSummaryCard() {
               <span className="font-mono font-medium">{formatTemp(high, units)}</span>
             </div>
           </div>
-          <div className="shrink-0 text-sm text-muted-foreground">
-            {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
+          <div className="flex shrink-0 items-center gap-3">
+            {shouldShowTripRangeChart(stops, dayStats) && <ChartLegend />}
+            <div className="text-sm text-muted-foreground">
+              {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
+            </div>
           </div>
         </div>
         <TripRangeChart stops={stops} dayStats={dayStats} units={units} />

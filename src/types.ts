@@ -14,6 +14,7 @@ export type DayStats = {
   avgLow: number
   precipMean: number
   wetDayProbability: number
+  weatherCode: number
   recordHigh: number
   recordLow: number
   source: 'forecast' | 'historical'

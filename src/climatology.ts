@@ -1,4 +1,5 @@
 import type { DayStats } from '@/types'
+import { mode } from '@/lib/utils'
 import { cacheKey, fetchDailySeries, mean, type DailySeries } from './open-meteo'
 
 const HISTORICAL_URL = 'https://archive-api.open-meteo.com/v1/archive'
@@ -21,7 +22,7 @@ export function fetchHistoricalSeries(lat: number, lon: number): Promise<DailySe
   url.searchParams.set('longitude', String(lon))
   url.searchParams.set('start_date', HISTORICAL_START)
   url.searchParams.set('end_date', HISTORICAL_END)
-  url.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min,precipitation_sum')
+  url.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode')
   url.searchParams.set('timezone', 'auto')
 
   const promise = fetchDailySeries(url).catch((error: unknown) => {
@@ -46,15 +47,18 @@ export function aggregateHistoricalDay(series: DailySeries, date: string): DaySt
   const highs: number[] = []
   const lows: number[] = []
   const precips: number[] = []
+  const weatherCodes: number[] = []
 
   series.time.forEach((sampleDate, i) => {
     if (!window.has(sampleDate.slice(5))) return
     const high = series.tMax[i]
     const low = series.tMin[i]
     const precip = series.precip[i]
+    const weatherCode = series.weatherCode[i]
     if (high != null) highs.push(high)
     if (low != null) lows.push(low)
     if (precip != null) precips.push(precip)
+    if (weatherCode != null) weatherCodes.push(weatherCode)
   })
 
   return {
@@ -65,6 +69,10 @@ export function aggregateHistoricalDay(series: DailySeries, date: string): DaySt
     wetDayProbability: precips.length
       ? precips.filter((p) => p > WET_DAY_THRESHOLD_MM).length / precips.length
       : NaN,
+    // A historical "day" pools ~180 sampled days (30 years x 7-day window),
+    // each with its own weather code — the mode is the most representative
+    // single condition for that calendar date, unlike averaging a temperature.
+    weatherCode: weatherCodes.length ? (mode(weatherCodes) ?? NaN) : NaN,
     recordHigh: highs.length ? Math.max(...highs) : NaN,
     recordLow: lows.length ? Math.min(...lows) : NaN,
     source: 'historical',
