@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { searchLocations, type GeocodeResult } from '@/geocode'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,17 +37,25 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
   const canSave = picked !== null && startDate !== ''
   const hint = !picked ? 'Search for a city.' : !startDate ? 'Choose a date for this stop.' : ''
 
+  const preQueryRef = useRef('')
+
   function pickSuggestion(result: GeocodeResult) {
+    preQueryRef.current = query
     setPicked(result)
     setQuery(result.name)
     setSuggestions([])
   }
 
   function handleQueryChange(value: string) {
+    // iOS predictive text can re-fire an input event right after a
+    // suggestion is tapped, replaying whatever text was in the field just
+    // before the tap (not the picked name). Recognize that specific replay
+    // by its value and ignore it — otherwise it silently clears the
+    // just-made pick and blocks saving with no visible error.
+    if (picked && value === preQueryRef.current && value !== picked.name) {
+      return
+    }
     setQuery(value)
-    // Some mobile keyboards re-fire an input event right after a suggestion
-    // is tapped (autocomplete/predictive text), with the same text that was
-    // just programmatically set — don't drop the just-made pick for that.
     if (picked && value !== picked.name) {
       setPicked(null)
     }

@@ -4,6 +4,15 @@ import type { DayStats, Stop, Units } from '@/types'
 
 export type DayStatsState = DayStats[] | 'loading' | 'error' | 'rate-limited'
 
+// crypto.randomUUID() only exists in secure contexts (HTTPS, or localhost) —
+// testing over a LAN IP on a phone is unauthenticated http, where it's
+// missing entirely and throws. crypto.getRandomValues has no such
+// restriction, so build an id from that instead.
+function generateStopId(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 type TripState = {
   stops: Stop[]
   dayStats: Record<string, DayStatsState>
@@ -24,7 +33,7 @@ export const useTripStore = create<TripState>()(
       units: 'C',
 
       addStop: () => {
-        const id = crypto.randomUUID()
+        const id = generateStopId()
         const stop: Stop = {
           id,
           city: '',
