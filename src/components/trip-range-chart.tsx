@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { DayStats, Stop, Units } from '@/types'
 import type { DayStatsState } from '@/store/trip-store'
@@ -224,10 +224,13 @@ export function TripRangeChart({
   }, [axisBounds])
   const conditionGroups = useMemo(() => buildConditionGroups(points), [points])
 
-  const iconRowRef = useRef<HTMLDivElement>(null)
   const [iconRowWidth, setIconRowWidth] = useState(0)
-  useEffect(() => {
-    const el = iconRowRef.current
+  // A plain useEffect(() => {...}, []) would only ever attach once, on this
+  // component's first render — but that first render (before 2+ stops have
+  // resolved) returns null, so the div doesn't exist yet and there'd be
+  // nothing to observe. A callback ref re-attaches every time the node
+  // itself changes, including the first time it actually mounts.
+  const iconRowRef = useCallback((el: HTMLDivElement | null) => {
     if (!el) return
     const observer = new ResizeObserver((entries) => setIconRowWidth(entries[0].contentRect.width))
     observer.observe(el)
