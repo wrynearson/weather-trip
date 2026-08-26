@@ -1,5 +1,5 @@
 import type { DayStats, Stop } from '@/types'
-import { getHistoricalDayStats } from './climatology'
+import { getHistoricalDayStats, getHistoricalRecordRanges, type RecordRange } from './climatology'
 import { cacheKey, fetchDailySeries, type DailySeries } from './open-meteo'
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
@@ -30,23 +30,39 @@ export function fetchForecastSeries(lat: number, lon: number): Promise<DailySeri
 }
 
 /**
- * Decides forecast vs. historical once per stop, from startDate vs. today —
- * not per night, even if a long stay straddles the 15-day threshold.
+ * Decides forecast vs. historical per night, from each night's own date vs.
+ * today — a long stay can straddle the 15-day threshold, with early nights
+ * forecast and later nights falling back to historical.
  */
 export async function getDayStats(stop: Stop): Promise<DayStats[]> {
   const dates = stopDates(stop)
-  if (daysUntil(stop.startDate) <= FORECAST_THRESHOLD_DAYS) {
+  const forecastDates = dates.filter((date) => daysUntil(date) <= FORECAST_THRESHOLD_DAYS)
+  const historicalDates = dates.filter((date) => daysUntil(date) > FORECAST_THRESHOLD_DAYS)
+
+  if (historicalDates.length === 0) {
     return getForecastDayStats(stop.lat, stop.lon, dates)
   }
-  return getHistoricalDayStats(stop.lat, stop.lon, dates)
+  if (forecastDates.length === 0) {
+    return getHistoricalDayStats(stop.lat, stop.lon, dates)
+  }
+
+  const [forecastStats, historicalStats] = await Promise.all([
+    getForecastDayStats(stop.lat, stop.lon, forecastDates),
+    getHistoricalDayStats(stop.lat, stop.lon, historicalDates),
+  ])
+  const byDate = new Map([...forecastStats, ...historicalStats].map((day) => [day.date, day]))
+  return dates.map((date) => byDate.get(date)!)
 }
 
 async function getForecastDayStats(lat: number, lon: number, dates: string[]): Promise<DayStats[]> {
-  const series = await fetchForecastSeries(lat, lon)
-  return dates.map((date) => aggregateForecastDay(series, date))
+  const [series, recordRanges] = await Promise.all([
+    fetchForecastSeries(lat, lon),
+    getHistoricalRecordRanges(lat, lon, dates),
+  ])
+  return dates.map((date) => aggregateForecastDay(series, date, recordRanges.get(date)))
 }
 
-function aggregateForecastDay(series: DailySeries, date: string): DayStats {
+function aggregateForecastDay(series: DailySeries, date: string, recordRange: RecordRange | undefined): DayStats {
   const index = nearestIndex(series, date)
   const high = index >= 0 ? series.tMax[index] : null
   const low = index >= 0 ? series.tMin[index] : null
@@ -60,16 +76,16 @@ function aggregateForecastDay(series: DailySeries, date: string): DayStats {
     precipMean: precip ?? NaN,
     wetDayProbability: precip != null ? Number(precip > WET_DAY_THRESHOLD_MM) : NaN,
     weatherCode: weatherCode ?? NaN,
-    // a single forecast day has no year-over-year spread, so record == avg
-    recordHigh: high ?? NaN,
-    recordLow: low ?? NaN,
+    recordHigh: recordRange?.recordHigh ?? NaN,
+    recordLow: recordRange?.recordLow ?? NaN,
     source: 'forecast',
     elevationM: series.elevationM,
   }
 }
 
-// A stay can extend a night or two past the 16-day forecast window; fall
-// back to the nearest available day rather than dropping the night.
+// getDayStats only ever asks for dates within the forecast window, so this
+// should always hit the exact-match branch — the nearest-day fallback just
+// guards against the API returning a short/gappy series.
 function nearestIndex(series: DailySeries, date: string): number {
   if (series.time.length === 0) return -1
   const exact = series.time.indexOf(date)

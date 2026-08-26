@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { DayStats, Stop, Units } from '@/types'
 import type { DayStatsState } from '@/store/trip-store'
 import { CONDITION_ICON, ConditionIcon } from '@/components/condition-icon'
@@ -14,7 +14,6 @@ type ChartDatum = DayStats & {
   avgSpan: number
   recordSpanBase: number
   recordSpan: number
-  avgMid: number
 }
 
 type StopSpan = {
@@ -43,7 +42,6 @@ function buildChartData(stops: Stop[], dayStats: Record<string, DayStatsState>) 
         avgSpan: day.avgHigh - day.avgLow,
         recordSpanBase: day.recordLow,
         recordSpan: day.recordHigh - day.recordLow,
-        avgMid: (day.avgHigh + day.avgLow) / 2,
       })
       index += 1
     }
@@ -175,8 +173,8 @@ function ChartTooltip({
       </div>
       <div className="mt-1.5 flex gap-3 font-mono text-xs">
         <span>
-          <span className="text-muted-foreground">avg</span> {formatTemp(datum.avgLow, units)}–
-          {formatTemp(datum.avgHigh, units)}
+          {datum.source === 'historical' && <span className="text-muted-foreground">avg</span>}{' '}
+          {formatTemp(datum.avgLow, units)}–{formatTemp(datum.avgHigh, units)}
         </span>
         <span>
           <span className="text-muted-foreground">rec</span> {formatTemp(datum.recordLow, units)}–
@@ -198,9 +196,6 @@ export function ChartLegend() {
       </span>
       <span className="flex items-center gap-1">
         <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/60" /> avg min/max
-      </span>
-      <span className="flex items-center gap-1">
-        <span className="inline-block h-px w-2 bg-muted-foreground" /> avg
       </span>
     </div>
   )
@@ -293,7 +288,6 @@ export function TripRangeChart({
             fillOpacity={0.28}
             isAnimationActive={false}
           />
-          <Line dataKey="avgMid" stroke="var(--muted-foreground)" strokeWidth={1.75} dot={false} isAnimationActive={false} />
         </ComposedChart>
       </ResponsiveContainer>
 
