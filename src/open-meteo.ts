@@ -1,3 +1,5 @@
+import { readLocalCache, writeLocalCache } from './lib/local-cache'
+
 export type DailySeries = {
   time: string[]
   tMax: (number | null)[]
@@ -49,4 +51,31 @@ export async function fetchDailySeries(url: URL): Promise<DailySeries> {
 
 export function mean(values: number[]): number {
   return values.length ? values.reduce((sum, v) => sum + v, 0) / values.length : NaN
+}
+
+/**
+ * Like fetchDailySeries, but persists the result to localStorage and serves
+ * from there when it's still fresh — skipping the network call entirely — or
+ * when a fresh fetch fails (rate limit, offline, etc). Stale data is only
+ * ever replaced by a successful fetch, never dropped just for being old, so
+ * a 429 degrades to "slightly outdated" instead of an error state.
+ */
+export async function fetchDailySeriesCached(
+  url: URL,
+  storageKey: string,
+  freshMs: number,
+): Promise<DailySeries> {
+  const cached = readLocalCache<DailySeries>(storageKey)
+  if (cached && Date.now() - cached.storedAt < freshMs) {
+    return cached.value
+  }
+
+  try {
+    const series = await fetchDailySeries(url)
+    writeLocalCache(storageKey, series)
+    return series
+  } catch (error) {
+    if (cached) return cached.value
+    throw error
+  }
 }

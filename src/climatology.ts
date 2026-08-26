@@ -1,6 +1,6 @@
 import type { DayStats } from '@/types'
 import { mode } from '@/lib/utils'
-import { cacheKey, fetchDailySeries, mean, type DailySeries } from './open-meteo'
+import { cacheKey, fetchDailySeriesCached, mean, type DailySeries } from './open-meteo'
 
 const HISTORICAL_URL = 'https://archive-api.open-meteo.com/v1/archive'
 const HISTORICAL_START = '1991-01-01'
@@ -8,8 +8,15 @@ const HISTORICAL_END = '2020-12-31'
 const POOL_WINDOW_DAYS = 3
 const WET_DAY_THRESHOLD_MM = 1
 
-// Cached by location only (never by date) — editing a stop's startDate/nights
-// must re-filter this cache, not refetch it.
+// The 1991-2020 archive is fixed reference data — it isn't expected to
+// change, so this is generous mainly to bound how long a stale localStorage
+// entry can outlive a genuine (rare) revision on Open-Meteo's end.
+const HISTORICAL_FRESH_MS = 30 * 24 * 60 * 60 * 1000
+
+// In-memory only: dedupes concurrent calls for the same location within one
+// page session (editing a stop's startDate/nights re-filters this, not a
+// refetch). Persistence across reloads is localStorage's job, inside
+// fetchDailySeriesCached.
 const cache = new Map<string, Promise<DailySeries>>()
 
 export function fetchHistoricalSeries(lat: number, lon: number): Promise<DailySeries> {
@@ -25,10 +32,12 @@ export function fetchHistoricalSeries(lat: number, lon: number): Promise<DailySe
   url.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode')
   url.searchParams.set('timezone', 'auto')
 
-  const promise = fetchDailySeries(url).catch((error: unknown) => {
-    cache.delete(key) // don't cache a failed fetch
-    throw error
-  })
+  const promise = fetchDailySeriesCached(url, `weather-trip:historical:${key}`, HISTORICAL_FRESH_MS).catch(
+    (error: unknown) => {
+      cache.delete(key) // don't cache a failed fetch
+      throw error
+    },
+  )
   cache.set(key, promise)
   return promise
 }

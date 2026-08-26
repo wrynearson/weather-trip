@@ -1,12 +1,20 @@
 import type { DayStats, Stop } from '@/types'
 import { getHistoricalDayStats, getHistoricalRecordRanges, type RecordRange } from './climatology'
-import { cacheKey, fetchDailySeries, type DailySeries } from './open-meteo'
+import { cacheKey, fetchDailySeriesCached, type DailySeries } from './open-meteo'
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
 const FORECAST_DAYS = 16
 const FORECAST_THRESHOLD_DAYS = 15
 const WET_DAY_THRESHOLD_MM = 1
 
+// Open-Meteo's forecast model refreshes a few times a day — a few hours of
+// staleness is imperceptible for trip planning, and avoids re-fetching on
+// every reload during a session.
+const FORECAST_FRESH_MS = 3 * 60 * 60 * 1000
+
+// In-memory only: dedupes concurrent calls for the same location within one
+// page session. Persistence across reloads is localStorage's job, inside
+// fetchDailySeriesCached.
 const cache = new Map<string, Promise<DailySeries>>()
 
 export function fetchForecastSeries(lat: number, lon: number): Promise<DailySeries> {
@@ -21,10 +29,12 @@ export function fetchForecastSeries(lat: number, lon: number): Promise<DailySeri
   url.searchParams.set('forecast_days', String(FORECAST_DAYS))
   url.searchParams.set('timezone', 'auto')
 
-  const promise = fetchDailySeries(url).catch((error: unknown) => {
-    cache.delete(key)
-    throw error
-  })
+  const promise = fetchDailySeriesCached(url, `weather-trip:forecast:${key}`, FORECAST_FRESH_MS).catch(
+    (error: unknown) => {
+      cache.delete(key)
+      throw error
+    },
+  )
   cache.set(key, promise)
   return promise
 }
