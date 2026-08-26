@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ConditionIcon } from '@/components/condition-icon'
 import { StopEditor, type StopDraft } from '@/components/stop-editor'
-import { CONDITION_LABEL, rankStopConditions } from '@/condition'
+import { CONDITION_LABEL, rankConditions } from '@/condition'
 import { formatElevation, formatTemp } from '@/lib/units'
 import { formatDateRange, formatNights } from '@/lib/dates'
 import { daysUntil } from '@/forecast'
@@ -95,7 +95,7 @@ export function StopCard({
   const avgHigh = days.reduce((sum, d) => sum + d.avgHigh, 0) / days.length
   const avgLow = days.reduce((sum, d) => sum + d.avgLow, 0) / days.length
   const wetDayProbability = days.reduce((sum, d) => sum + d.wetDayProbability, 0) / days.length
-  const topConditions = rankStopConditions(days)
+  const topConditions = rankConditions(days)
   const source = days[0].source
   const sourceLabel = source === 'forecast' ? `Forecast · ${daysUntil(stop.startDate)}d out` : 'Historical avg'
 

@@ -1,16 +1,10 @@
 import { useTripStore } from '@/store/trip-store'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { ChartLegend, TripRangeChart, shouldShowTripRangeChart } from '@/components/trip-range-chart'
-import { classifyTrip, TRIP_BADGE_LABEL, type TripBadge } from '@/condition'
+import { ConditionIcon } from '@/components/condition-icon'
+import { CONDITION_LABEL, rankConditions } from '@/condition'
 import { formatTemp } from '@/lib/units'
 import type { DayStats } from '@/types'
-
-const BADGE_VARIANT: Record<TripBadge, 'default' | 'secondary' | 'outline'> = {
-  sunny: 'default',
-  mixed: 'secondary',
-  rainy: 'outline',
-}
 
 export function TripSummaryCard() {
   const { stops, dayStats, units } = useTripStore()
@@ -22,7 +16,7 @@ export function TripSummaryCard() {
 
   if (allDays.length === 0) return null
 
-  const badge = classifyTrip(allDays)
+  const topConditions = rankConditions(allDays)
   const low = Math.min(...allDays.map((day) => day.avgLow))
   const high = Math.max(...allDays.map((day) => day.avgHigh))
 
@@ -31,7 +25,11 @@ export function TripSummaryCard() {
       <CardContent>
         <div className="flex items-start justify-between gap-4">
           <div className="flex flex-wrap items-center gap-4">
-            <Badge variant={BADGE_VARIANT[badge]}>{TRIP_BADGE_LABEL[badge]}</Badge>
+            <span className="flex items-center gap-1">
+              {topConditions.map((condition) => (
+                <ConditionIcon key={condition} condition={condition} title={CONDITION_LABEL[condition]} />
+              ))}
+            </span>
             <div className="flex items-baseline gap-1.5 text-sm">
               <span className="text-muted-foreground">Trip low</span>
               <span className="font-mono font-medium">{formatTemp(low, units)}</span>

@@ -103,58 +103,78 @@ export function classifyDay(stats: DayStats): Condition {
   return WEATHER_CODE_CONDITION[stats.weatherCode] ?? 'clear-sky'
 }
 
-export type TripBadge = 'sunny' | 'mixed' | 'rainy'
-
-/**
- * Classify an entire trip's overall weather character.
- * Computes the mean precipitation probability across all days (pooled from all stops)
- * to determine if the trip is generally sunny, mixed, or rainy.
- */
-export function classifyTrip(allDayStats: DayStats[]): TripBadge {
-  if (allDayStats.length === 0) {
-    return 'sunny'
-  }
-
-  const meanWetProbability =
-    allDayStats.reduce((sum, day) => sum + day.wetDayProbability, 0) /
-    allDayStats.length
-
-  // High chance of rain: >0.6 mean wet probability
-  if (meanWetProbability > 0.6) {
-    return 'rainy'
-  }
-
-  // Low chance of rain: <=0.3 mean wet probability
-  if (meanWetProbability <= 0.3) {
-    return 'sunny'
-  }
-
-  // Mid-range: mixed conditions
-  return 'mixed'
+// Groups conditions that differ only by intensity (e.g. rain-slight vs.
+// rain-heavy are both "rain") so overview icon rows show one icon per
+// weather phenomenon instead of one per intensity tier. Distinct phenomena
+// — rain vs. rain showers, drizzle vs. freezing drizzle, fog vs. rime fog —
+// still count separately.
+const CONDITION_FAMILY: Record<Condition, string> = {
+  'clear-sky': 'clear-sky',
+  'mainly-clear': 'mainly-clear',
+  'partly-cloudy': 'partly-cloudy',
+  overcast: 'overcast',
+  fog: 'fog',
+  'rime-fog': 'fog',
+  'drizzle-light': 'drizzle',
+  'drizzle-moderate': 'drizzle',
+  'drizzle-dense': 'drizzle',
+  'freezing-drizzle-light': 'freezing-drizzle',
+  'freezing-drizzle-dense': 'freezing-drizzle',
+  'rain-slight': 'rain',
+  'rain-moderate': 'rain',
+  'rain-heavy': 'rain',
+  'freezing-rain-light': 'freezing-rain',
+  'freezing-rain-heavy': 'freezing-rain',
+  'snow-slight': 'snow',
+  'snow-moderate': 'snow',
+  'snow-heavy': 'snow',
+  'snow-grains': 'snow-grains',
+  'rain-showers-slight': 'rain-showers',
+  'rain-showers-moderate': 'rain-showers',
+  'rain-showers-violent': 'rain-showers',
+  'snow-showers-slight': 'snow-showers',
+  'snow-showers-heavy': 'snow-showers',
+  thunderstorm: 'thunderstorm',
+  'thunderstorm-hail-slight': 'thunderstorm',
+  'thunderstorm-hail-heavy': 'thunderstorm',
 }
 
-export const TRIP_BADGE_LABEL: Record<TripBadge, string> = {
-  sunny: 'Generally sunny',
-  mixed: 'Mixed conditions',
-  rainy: 'Mostly rainy',
+// The condition used to represent each family's icon/label — its most
+// typical (usually moderate) intensity, not whichever exact code happened
+// to be most common.
+const FAMILY_REPRESENTATIVE: Record<string, Condition> = {
+  'clear-sky': 'clear-sky',
+  'mainly-clear': 'mainly-clear',
+  'partly-cloudy': 'partly-cloudy',
+  overcast: 'overcast',
+  fog: 'fog',
+  drizzle: 'drizzle-moderate',
+  'freezing-drizzle': 'freezing-drizzle-light',
+  rain: 'rain-moderate',
+  'freezing-rain': 'freezing-rain-light',
+  snow: 'snow-moderate',
+  'snow-grains': 'snow-grains',
+  'rain-showers': 'rain-showers-moderate',
+  'snow-showers': 'snow-showers-slight',
+  thunderstorm: 'thunderstorm',
 }
 
 /**
- * Ranks a stop's nights by how often each condition occurs, most frequent
- * first (e.g. 3 clear-sky + 2 rain-heavy nights -> ['clear-sky', 'rain-heavy']),
- * capped at `limit`. Each night's condition is already classified from its own
- * weather code (or, for historical data, the mode of its 30-year sample) —
- * this only counts and ranks, it doesn't re-derive anything.
+ * Ranks days by how often each weather family occurs, most frequent first
+ * (e.g. 3 clear-sky + 2 rain-heavy + 1 rain-slight nights -> ['clear-sky',
+ * 'rain']), capped at `limit`. Intensity is ignored when grouping — rain at
+ * any severity counts as one "rain" family — so the result reads as the
+ * trip's or stop's dominant weather, not a list of every code that occurred.
  */
-export function rankStopConditions(days: DayStats[], limit = 3): Condition[] {
-  const counts = new Map<Condition, number>()
+export function rankConditions(days: DayStats[], limit = 3): Condition[] {
+  const counts = new Map<string, number>()
   for (const day of days) {
-    const condition = classifyDay(day)
-    counts.set(condition, (counts.get(condition) ?? 0) + 1)
+    const family = CONDITION_FAMILY[classifyDay(day)]
+    counts.set(family, (counts.get(family) ?? 0) + 1)
   }
 
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
-    .map(([condition]) => condition)
+    .map(([family]) => FAMILY_REPRESENTATIVE[family])
 }
