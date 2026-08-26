@@ -25,11 +25,16 @@ export function fetchForecastSeries(lat: number, lon: number): Promise<DailySeri
   const url = new URL(FORECAST_URL)
   url.searchParams.set('latitude', String(lat))
   url.searchParams.set('longitude', String(lon))
-  url.searchParams.set('daily', 'temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode')
+  url.searchParams.set(
+    'daily',
+    'temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,weathercode',
+  )
   url.searchParams.set('forecast_days', String(FORECAST_DAYS))
   url.searchParams.set('timezone', 'auto')
 
-  const promise = fetchDailySeriesCached(url, `weather-trip:forecast:${key}`, FORECAST_FRESH_MS).catch(
+  // v2: adds precipitation_probability_max — bump the key so caches saved
+  // before that field existed don't get served as if they had it.
+  const promise = fetchDailySeriesCached(url, `weather-trip:forecast:v2:${key}`, FORECAST_FRESH_MS).catch(
     (error: unknown) => {
       cache.delete(key)
       throw error
@@ -77,6 +82,19 @@ function aggregateForecastDay(series: DailySeries, date: string, recordRange: Re
   const high = index >= 0 ? series.tMax[index] : null
   const low = index >= 0 ? series.tMin[index] : null
   const precip = index >= 0 ? series.precip[index] : null
+  // Optional chaining guards against a pre-existing localStorage cache entry
+  // from before this field existed — old cached series won't have it.
+  const precipProbability = index >= 0 ? (series.precipProbabilityMax?.[index] ?? null) : null
+  // Open-Meteo returns null probability for the last day of a 16-day request
+  // (that day never gets a full 24h of hourly data to aggregate) — which is
+  // always our forecast/historical boundary day. Fall back to a binary
+  // estimate from the precip total rather than showing no chance at all.
+  const wetDayProbability =
+    precipProbability != null
+      ? precipProbability / 100
+      : precip != null
+        ? Number(precip > WET_DAY_THRESHOLD_MM)
+        : NaN
   const weatherCode = index >= 0 ? series.weatherCode[index] : null
 
   return {
@@ -84,7 +102,7 @@ function aggregateForecastDay(series: DailySeries, date: string, recordRange: Re
     avgHigh: high ?? NaN,
     avgLow: low ?? NaN,
     precipMean: precip ?? NaN,
-    wetDayProbability: precip != null ? Number(precip > WET_DAY_THRESHOLD_MM) : NaN,
+    wetDayProbability,
     weatherCode: weatherCode ?? NaN,
     recordHigh: recordRange?.recordHigh ?? NaN,
     recordLow: recordRange?.recordLow ?? NaN,

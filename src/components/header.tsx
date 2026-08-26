@@ -16,11 +16,11 @@ export function Header() {
   return (
     <header className="border-b border-border">
       <div className="mx-auto max-w-[780px] px-4 py-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="w-full sm:flex-1">
             <h1 className="font-heading text-2xl font-medium">Trip Weather Planner</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              Live forecasts for stops within 15 days, 30-year historical averages beyond that
+              Forecasted and historical weather averages
             </p>
           </div>
 

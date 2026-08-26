@@ -16,3 +16,12 @@ export function formatElevation(elevationM: number, units: Units): string {
   }
   return `${Math.round(elevationM).toLocaleString()} m`
 }
+
+const MM_PER_INCH = 25.4
+
+export function formatPrecip(mm: number, units: Units): string {
+  if (units === 'F') {
+    return `${(mm / MM_PER_INCH).toFixed(2)}"`
+  }
+  return `${Math.round(mm)}mm`
+}

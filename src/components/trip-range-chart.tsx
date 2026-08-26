@@ -5,7 +5,7 @@ import type { DayStatsState } from '@/store/trip-store'
 import { CONDITION_ICON, ConditionIcon } from '@/components/condition-icon'
 import { Badge } from '@/components/ui/badge'
 import { classifyDay, CONDITION_LABEL, type Condition } from '@/condition'
-import { formatTemp } from '@/lib/units'
+import { formatPrecip, formatTemp } from '@/lib/units'
 
 type ChartDatum = DayStats & {
   index: number
@@ -187,6 +187,8 @@ function ChartTooltip({
       </div>
       <div className="mt-1 text-xs text-muted-foreground">
         {Math.round(datum.wetDayProbability * 100)}% precipitation chance
+        <span className="mx-1">·</span>
+        {formatPrecip(datum.precipMean, units)} {datum.source === 'historical' ? 'avg' : 'total'}
       </div>
     </div>
   )
