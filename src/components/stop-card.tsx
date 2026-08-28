@@ -6,9 +6,11 @@ import { Badge } from '@/components/ui/badge'
 import { ConditionIcon } from '@/components/condition-icon'
 import { StopEditor, type StopDraft } from '@/components/stop-editor'
 import { CONDITION_LABEL, rankConditions } from '@/condition'
-import { formatElevation, formatTemp } from '@/lib/units'
+import { formatElevation, formatPercent, formatTemp } from '@/lib/units'
 import { formatDateRange, formatNights } from '@/lib/dates'
 import { daysUntil } from '@/forecast'
+import { mean } from '@/open-meteo'
+import { validNumbers } from '@/lib/utils'
 
 type StopCardProps = {
   stop: Stop
@@ -92,12 +94,21 @@ export function StopCard({
   }
 
   const days: DayStats[] = dayStatsState
-  const avgHigh = days.reduce((sum, d) => sum + d.avgHigh, 0) / days.length
-  const avgLow = days.reduce((sum, d) => sum + d.avgLow, 0) / days.length
-  const wetDayProbability = days.reduce((sum, d) => sum + d.wetDayProbability, 0) / days.length
+  const avgHigh = mean(validNumbers(days.map((d) => d.avgHigh)))
+  const avgLow = mean(validNumbers(days.map((d) => d.avgLow)))
+  const wetDayProbability = mean(validNumbers(days.map((d) => d.wetDayProbability)))
   const topConditions = rankConditions(days)
-  const source = days[0].source
-  const sourceLabel = source === 'forecast' ? `Forecast · ${daysUntil(stop.startDate)}d out` : 'Historical avg'
+  // A long stay can straddle the forecast/historical boundary (see
+  // forecast.ts getDayStats) — reflect that in the badge instead of only
+  // looking at the first night's source.
+  const hasForecast = days.some((d) => d.source === 'forecast')
+  const hasHistorical = days.some((d) => d.source === 'historical')
+  const sourceLabel =
+    hasForecast && hasHistorical
+      ? `Forecast + historical · ${daysUntil(stop.startDate)}d out`
+      : hasForecast
+        ? `Forecast · ${daysUntil(stop.startDate)}d out`
+        : 'Historical avg'
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
@@ -129,7 +140,7 @@ export function StopCard({
           </div>
         </div>
         <Badge
-          variant={source === 'forecast' ? 'default' : 'secondary'}
+          variant={hasForecast ? 'default' : 'secondary'}
           className="self-start shrink-0 whitespace-nowrap"
         >
           {sourceLabel}
@@ -159,7 +170,7 @@ export function StopCard({
               Precipitation chance
             </div>
             <div className="mt-0.5 font-mono text-2xl font-medium tracking-tight text-muted-foreground">
-              {Math.round(wetDayProbability * 100)}%
+              {formatPercent(wetDayProbability)}
             </div>
           </div>
         </div>

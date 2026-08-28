@@ -4,6 +4,7 @@ import { ChartLegend, TripRangeChart, shouldShowTripRangeChart } from '@/compone
 import { ConditionIcon } from '@/components/condition-icon'
 import { CONDITION_LABEL, rankConditions } from '@/condition'
 import { formatTemp } from '@/lib/units'
+import { maxOrNaN, minOrNaN, validNumbers } from '@/lib/utils'
 import type { DayStats } from '@/types'
 
 export function TripSummaryCard() {
@@ -17,8 +18,8 @@ export function TripSummaryCard() {
   if (allDays.length === 0) return null
 
   const topConditions = rankConditions(allDays)
-  const low = Math.min(...allDays.map((day) => day.avgLow))
-  const high = Math.max(...allDays.map((day) => day.avgHigh))
+  const low = minOrNaN(validNumbers(allDays.map((day) => day.avgLow)))
+  const high = maxOrNaN(validNumbers(allDays.map((day) => day.avgHigh)))
 
   return (
     <Card className="sticky top-0 z-10 shadow-lg">

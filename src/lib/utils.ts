@@ -20,3 +20,17 @@ export function mode<T>(values: T[]): T | undefined {
   }
   return best
 }
+
+// Drops NaN entries (a day with no usable weather data) so one gap doesn't
+// poison a min/max/mean computed across several days.
+export function validNumbers(values: number[]): number[] {
+  return values.filter((v) => !Number.isNaN(v))
+}
+
+export function minOrNaN(values: number[]): number {
+  return values.length ? Math.min(...values) : NaN
+}
+
+export function maxOrNaN(values: number[]): number {
+  return values.length ? Math.max(...values) : NaN
+}

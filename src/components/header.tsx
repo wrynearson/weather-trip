@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Info, Monitor, Moon, Sun, Trash2 } from "lucide-react";
-import { useTripStore } from "@/store/trip-store";
-import { useThemeStore, type Theme } from "@/hooks/use-theme";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react'
+import { Info, Monitor, Moon, Sun, Trash2 } from 'lucide-react'
+import { useTripStore } from '@/store/trip-store'
+import { useThemeStore, type Theme } from '@/hooks/use-theme'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -10,19 +10,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+} from '@/components/ui/dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: "light", label: "Light theme", icon: Sun },
-  { value: "system", label: "System theme", icon: Monitor },
-  { value: "dark", label: "Dark theme", icon: Moon },
-];
+  { value: 'light', label: 'Light theme', icon: Sun },
+  { value: 'system', label: 'System theme', icon: Monitor },
+  { value: 'dark', label: 'Dark theme', icon: Moon },
+]
 
 export function Header() {
-  const { stops, units, setUnits, clearTrip } = useTripStore();
-  const { theme, setTheme } = useThemeStore();
-  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
+  const { stops, units, setUnits, clearTrip } = useTripStore()
+  const { theme, setTheme } = useThemeStore()
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false)
 
   return (
     <header className="border-b border-border">
@@ -39,16 +39,16 @@ export function Header() {
             {/* °C/°F Toggle */}
             <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
               <Button
-                variant={units === "C" ? "default" : "ghost"}
+                variant={units === 'C' ? 'default' : 'ghost'}
                 size="icon-sm"
-                onClick={() => setUnits("C")}
+                onClick={() => setUnits('C')}
               >
                 °C
               </Button>
               <Button
-                variant={units === "F" ? "default" : "ghost"}
+                variant={units === 'F' ? 'default' : 'ghost'}
                 size="icon-sm"
-                onClick={() => setUnits("F")}
+                onClick={() => setUnits('F')}
               >
                 °F
               </Button>
@@ -59,7 +59,7 @@ export function Header() {
               {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
                 <Button
                   key={value}
-                  variant={theme === value ? "default" : "ghost"}
+                  variant={theme === value ? 'default' : 'ghost'}
                   size="icon-sm"
                   onClick={() => setTheme(value)}
                 >
@@ -98,8 +98,8 @@ export function Header() {
                       variant="destructive"
                       size="sm"
                       onClick={() => {
-                        clearTrip();
-                        setConfirmClearOpen(false);
+                        clearTrip()
+                        setConfirmClearOpen(false)
                       }}
                     >
                       Clear trip
@@ -141,16 +141,16 @@ export function Header() {
                     it covers.
                   </p>
                   <p>
-                    Weather data comes from{" "}
+                    Weather data comes from{' '}
                     <a
                       href="https://open-meteo.com"
                       target="_blank"
                       rel="noreferrer"
                     >
                       Open-Meteo
-                    </a>{" "}
+                    </a>{' '}
                     (forecast and 30-year historical archive). Locations are
-                    looked up via{" "}
+                    looked up via{' '}
                     <a
                       href="https://nominatim.openstreetmap.org"
                       target="_blank"
@@ -158,7 +158,7 @@ export function Header() {
                     >
                       OpenStreetMap Nominatim
                     </a>
-                    . Weather icons are from{" "}
+                    . Weather icons are from{' '}
                     <a
                       href="https://lucide.dev"
                       target="_blank"
@@ -176,5 +176,5 @@ export function Header() {
         </div>
       </div>
     </header>
-  );
+  )
 }

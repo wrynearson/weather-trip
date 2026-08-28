@@ -5,7 +5,8 @@ import type { DayStatsState } from '@/store/trip-store'
 import { CONDITION_ICON, ConditionIcon } from '@/components/condition-icon'
 import { Badge } from '@/components/ui/badge'
 import { classifyDay, CONDITION_LABEL, type Condition } from '@/condition'
-import { formatPrecip, formatTemp } from '@/lib/units'
+import { formatPercent, formatPrecip, formatTemp } from '@/lib/units'
+import { maxOrNaN, minOrNaN, validNumbers } from '@/lib/utils'
 
 type ChartDatum = DayStats & {
   index: number
@@ -137,11 +138,16 @@ function thinConditionGroups(groups: ConditionGroup[], totalDays: number, width:
 
 // Rounds the visible temperature extremes out to the nearest 10 (e.g. a
 // 15-35 range becomes a 10-40 axis) so the background scale reads in tidy
-// increments instead of the exact data bounds.
+// increments instead of the exact data bounds. Considers avgLow/avgHigh too,
+// not just the record band — a forecast day's actual high can exceed the
+// 30-year record high for that date, and the axis needs to stretch to fit it
+// rather than clipping the avg-range area.
 function computeAxisBounds(points: ChartDatum[]): { min: number; max: number } {
-  if (points.length === 0) return { min: 0, max: 10 }
-  const min = Math.floor(Math.min(...points.map((p) => p.recordLow)) / 10) * 10
-  const max = Math.ceil(Math.max(...points.map((p) => p.recordHigh)) / 10) * 10
+  const lows = validNumbers([...points.map((p) => p.recordLow), ...points.map((p) => p.avgLow)])
+  const highs = validNumbers([...points.map((p) => p.recordHigh), ...points.map((p) => p.avgHigh)])
+  if (lows.length === 0 || highs.length === 0) return { min: 0, max: 10 }
+  const min = Math.floor(minOrNaN(lows) / 10) * 10
+  const max = Math.ceil(maxOrNaN(highs) / 10) * 10
   return { min, max: max > min ? max : min + 10 }
 }
 
@@ -183,14 +189,16 @@ function ChartTooltip({
           {formatTemp(datum.avgHigh, units)}
         </span>
         <span>
-          <span className="text-muted-foreground">{datum.source === 'forecast' ? 'norm' : 'range'}</span>{' '}
+          {/* Same 30-year record band regardless of source — forecast days
+              reuse it too, see climatology.ts getHistoricalRecordRanges. */}
+          <span className="text-muted-foreground">range</span>{' '}
           {formatTemp(datum.recordLow, units)}
           <span className="mx-0.5">·</span>
           {formatTemp(datum.recordHigh, units)}
         </span>
       </div>
       <div className="mt-1 text-xs text-muted-foreground">
-        {Math.round(datum.wetDayProbability * 100)}% precipitation chance
+        {formatPercent(datum.wetDayProbability)} precipitation chance
         <span className="mx-1">·</span>
         {formatPrecip(datum.precipMean, units)} {datum.source === 'historical' ? 'avg' : 'total'}
       </div>

@@ -32,6 +32,7 @@ export type Condition =
   | 'thunderstorm'
   | 'thunderstorm-hail-slight'
   | 'thunderstorm-hail-heavy'
+  | 'unknown'
 
 const WEATHER_CODE_CONDITION: Record<number, Condition> = {
   0: 'clear-sky',
@@ -93,14 +94,16 @@ export const CONDITION_LABEL: Record<Condition, string> = {
   thunderstorm: 'Thunderstorm',
   'thunderstorm-hail-slight': 'Thunderstorm, slight hail',
   'thunderstorm-hail-heavy': 'Thunderstorm, heavy hail',
+  unknown: 'No data',
 }
 
 /**
- * Maps a day's WMO weather code to its condition. Falls back to 'clear-sky'
- * for a missing/unrecognized code.
+ * Maps a day's WMO weather code to its condition. Falls back to 'unknown'
+ * for a missing/unrecognized code, rather than a specific condition like
+ * 'clear-sky' — a data gap shouldn't silently read as an actual forecast.
  */
 export function classifyDay(stats: DayStats): Condition {
-  return WEATHER_CODE_CONDITION[stats.weatherCode] ?? 'clear-sky'
+  return WEATHER_CODE_CONDITION[stats.weatherCode] ?? 'unknown'
 }
 
 // Groups conditions that differ only by intensity (e.g. rain-slight vs.
@@ -137,6 +140,7 @@ const CONDITION_FAMILY: Record<Condition, string> = {
   thunderstorm: 'thunderstorm',
   'thunderstorm-hail-slight': 'thunderstorm',
   'thunderstorm-hail-heavy': 'thunderstorm',
+  unknown: 'unknown',
 }
 
 // The condition used to represent each family's icon/label — its most
@@ -157,6 +161,7 @@ const FAMILY_REPRESENTATIVE: Record<string, Condition> = {
   'rain-showers': 'rain-showers-moderate',
   'snow-showers': 'snow-showers-slight',
   thunderstorm: 'thunderstorm',
+  unknown: 'unknown',
 }
 
 export type RankedCondition = {

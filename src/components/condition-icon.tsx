@@ -1,4 +1,5 @@
 import {
+  CircleHelp,
   Cloud,
   CloudDrizzle,
   CloudFog,
@@ -11,6 +12,7 @@ import {
   CloudSunRain,
   Snowflake,
   Sun,
+  SunSnow,
 } from 'lucide-react'
 import type { Condition } from '@/condition'
 import { cn } from '@/lib/utils'
@@ -36,14 +38,20 @@ export const CONDITION_ICON: Record<Condition, typeof Sun> = {
   'snow-moderate': CloudSnow,
   'snow-heavy': Snowflake,
   'snow-grains': Snowflake,
+  // Showers get their own icon at every intensity (never reusing the
+  // continuous-precipitation icons above) so a rain <-> rain-showers or
+  // snow <-> snow-showers transition is still visible at a glance — see
+  // condition.ts's CONDITION_FAMILY comment on why these are distinct
+  // phenomena, not just intensity tiers of "rain"/"snow".
   'rain-showers-slight': CloudSunRain,
-  'rain-showers-moderate': CloudRain,
-  'rain-showers-violent': CloudRainWind,
-  'snow-showers-slight': CloudSnow,
-  'snow-showers-heavy': Snowflake,
+  'rain-showers-moderate': CloudSunRain,
+  'rain-showers-violent': CloudSunRain,
+  'snow-showers-slight': SunSnow,
+  'snow-showers-heavy': SunSnow,
   thunderstorm: CloudLightning,
   'thunderstorm-hail-slight': CloudLightning,
   'thunderstorm-hail-heavy': CloudLightning,
+  unknown: CircleHelp,
 }
 
 export function ConditionIcon({
