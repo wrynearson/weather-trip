@@ -1,5 +1,7 @@
-import { Info } from "lucide-react";
+import { useState } from "react";
+import { Info, Monitor, Moon, Sun, Trash2 } from "lucide-react";
 import { useTripStore } from "@/store/trip-store";
+import { useThemeStore, type Theme } from "@/hooks/use-theme";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,9 +11,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
+  { value: "light", label: "Light theme", icon: Sun },
+  { value: "system", label: "System theme", icon: Monitor },
+  { value: "dark", label: "Dark theme", icon: Moon },
+];
 
 export function Header() {
   const { stops, units, setUnits, clearTrip } = useTripStore();
+  const { theme, setTheme } = useThemeStore();
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   return (
     <header className="border-b border-border">
@@ -26,35 +37,76 @@ export function Header() {
 
           <div className="flex items-center gap-3">
             {/* °C/°F Toggle */}
-            <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
+            <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
               <Button
                 variant={units === "C" ? "default" : "ghost"}
-                size="sm"
+                size="icon-sm"
                 onClick={() => setUnits("C")}
-                className="min-w-10"
               >
                 °C
               </Button>
               <Button
                 variant={units === "F" ? "default" : "ghost"}
-                size="sm"
+                size="icon-sm"
                 onClick={() => setUnits("F")}
-                className="min-w-10"
               >
                 °F
               </Button>
             </div>
 
-            {/* Clear Trip Link */}
+            {/* Theme Toggle */}
+            <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
+              {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
+                <Button
+                  key={value}
+                  variant={theme === value ? "default" : "ghost"}
+                  size="icon-sm"
+                  onClick={() => setTheme(value)}
+                >
+                  <Icon />
+                  <span className="sr-only">{label}</span>
+                </Button>
+              ))}
+            </div>
+
+            {/* Clear Trip */}
             {stops.length > 0 && (
-              <Button
-                variant="link"
-                size="sm"
-                onClick={clearTrip}
-                className="text-destructive hover:text-destructive/80"
-              >
-                Clear trip
-              </Button>
+              <Popover open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    />
+                  }
+                >
+                  <Trash2 />
+                  <span className="sr-only">Clear trip</span>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-56">
+                  <p className="text-sm">Clear this trip? This can&apos;t be undone.</p>
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmClearOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        clearTrip();
+                        setConfirmClearOpen(false);
+                      }}
+                    >
+                      Clear trip
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             )}
 
             {/* About Button */}
@@ -63,7 +115,7 @@ export function Header() {
                 <Button
                   variant="outline"
                   size="icon-sm"
-                  className="rounded-full"
+                  className="rounded-full bg-card"
                 >
                   <Info />
                   <span className="sr-only">About</span>

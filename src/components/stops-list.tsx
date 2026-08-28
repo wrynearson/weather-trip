@@ -68,7 +68,7 @@ export function StopsList() {
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}
-          className="flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-muted px-4 py-3 text-sm font-semibold tracking-wide text-foreground uppercase hover:bg-muted/70"
+          className="flex w-full items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm font-semibold tracking-wide text-foreground uppercase shadow-sm hover:bg-muted/50"
         >
           <span>Trip stops</span>
           <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground normal-case">

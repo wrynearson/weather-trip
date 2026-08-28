@@ -52,40 +52,78 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * Theme built on Flexoki (stephango.com/flexoki, MIT License).
+ * Light and dark mirror the same surface/text/accent steps through the
+ * palette, so both themes share one consistent set of Flexoki hues.
+ */
 :root {
-    /* Trip Weather Planner palette (design brief) */
-    --background: #f7f4ef; /* page canvas */
-    --foreground: #221f1b; /* body text, approximated — not sampled from the brief */
-    --card: #ffffff; /* surface */
-    --card-foreground: #221f1b;
+    --background: #f7f4ef; /* original off-white canvas, not flexoki paper — less yellow */
+    --foreground: #282726; /* flexoki base-900 */
+    --card: #ffffff; /* white, not flexoki base-50 — crisper surface against the paper canvas */
+    --card-foreground: #282726;
     --popover: #ffffff;
-    --popover-foreground: #221f1b;
-    --primary: #3f6b5c; /* accent */
-    --primary-foreground: #ffffff;
-    --secondary: #efebe3;
-    --secondary-foreground: #221f1b;
-    --muted: #efebe3;
-    --muted-foreground: #7a756c;
-    --accent: #e8efec; /* subtle hover tint of primary, for shadcn's own "accent" slot */
-    --accent-foreground: #221f1b;
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: #e4dfd6;
-    --input: #e4dfd6;
-    --ring: #3f6b5c;
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
+    --popover-foreground: #282726;
+    --primary: #24837b; /* flexoki cyan-600 */
+    --primary-foreground: #fffcf0;
+    --secondary: #e6e4d9; /* flexoki base-100 */
+    --secondary-foreground: #282726;
+    --muted: #e6e4d9;
+    --muted-foreground: #575653; /* flexoki base-700 */
+    --accent: #dad8ce; /* flexoki base-150 */
+    --accent-foreground: #282726;
+    --destructive: #af3029; /* flexoki red-600 */
+    --border: #dad8ce;
+    --input: #dad8ce;
+    --ring: #24837b;
+    --chart-1: #cecdc3; /* flexoki base-200 */
+    --chart-2: #9f9d96; /* flexoki base-400 */
+    --chart-3: #878580; /* flexoki base-500 */
+    --chart-4: #6f6e69; /* flexoki base-600 */
+    --chart-5: #403e3c; /* flexoki base-800 */
     --radius: 0.5625rem; /* 9px base -> rounded-lg (buttons/inputs) ~9px, rounded-xl (cards) ~12.6px */
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    --sidebar: #ffffff;
+    --sidebar-foreground: #282726;
+    --sidebar-primary: #24837b;
+    --sidebar-primary-foreground: #fffcf0;
+    --sidebar-accent: #dad8ce;
+    --sidebar-accent-foreground: #282726;
+    --sidebar-border: #dad8ce;
+    --sidebar-ring: #24837b;
+}
+
+.dark {
+    --background: #1c1b1a; /* flexoki base-950 */
+    --foreground: #e6e4d9; /* flexoki base-100 */
+    --card: #282726; /* flexoki base-900 */
+    --card-foreground: #e6e4d9;
+    --popover: #282726;
+    --popover-foreground: #e6e4d9;
+    --primary: #3aa99f; /* flexoki cyan-400 — same cyan/teal hue as the light theme's accent, lightened for dark bg */
+    --primary-foreground: #100f0f;
+    --secondary: #343331; /* flexoki base-850 */
+    --secondary-foreground: #e6e4d9;
+    --muted: #343331;
+    --muted-foreground: #9f9d96; /* flexoki base-400 */
+    --accent: #403e3c; /* flexoki base-800 */
+    --accent-foreground: #e6e4d9;
+    --destructive: #d14d41; /* flexoki red-400 */
+    --border: #403e3c;
+    --input: #403e3c;
+    --ring: #3aa99f;
+    --chart-1: #b7b5ac; /* flexoki base-300 */
+    --chart-2: #9f9d96; /* flexoki base-400 */
+    --chart-3: #878580; /* flexoki base-500 */
+    --chart-4: #6f6e69; /* flexoki base-600 */
+    --chart-5: #575653; /* flexoki base-700 */
+    --sidebar: #282726;
+    --sidebar-foreground: #e6e4d9;
+    --sidebar-primary: #3aa99f;
+    --sidebar-primary-foreground: #100f0f;
+    --sidebar-accent: #403e3c;
+    --sidebar-accent-foreground: #e6e4d9;
+    --sidebar-border: #403e3c;
+    --sidebar-ring: #3aa99f;
 }
 
 @layer base {

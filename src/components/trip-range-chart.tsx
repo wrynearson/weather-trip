@@ -248,7 +248,7 @@ export function TripRangeChart({
   if (spans.length < 2) return null
 
   return (
-    <div className="mt-3.5 rounded-lg border border-border bg-muted/40 p-3">
+    <div className="mt-3.5 rounded-lg border border-border bg-card p-3">
       <div ref={iconRowRef} className="relative h-4">
         {visibleConditionGroups.map((group) => (
           <span
