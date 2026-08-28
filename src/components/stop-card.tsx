@@ -8,7 +8,6 @@ import { StopEditor, type StopDraft } from '@/components/stop-editor'
 import { CONDITION_LABEL, rankConditions } from '@/condition'
 import { formatElevation, formatPercent, formatTemp } from '@/lib/units'
 import { formatDateRange, formatNights } from '@/lib/dates'
-import { daysUntil } from '@/forecast'
 import { mean } from '@/open-meteo'
 import { validNumbers } from '@/lib/utils'
 
@@ -99,16 +98,10 @@ export function StopCard({
   const wetDayProbability = mean(validNumbers(days.map((d) => d.wetDayProbability)))
   const topConditions = rankConditions(days)
   // A long stay can straddle the forecast/historical boundary (see
-  // forecast.ts getDayStats) — reflect that in the badge instead of only
-  // looking at the first night's source.
+  // forecast.ts getDayStats) — show both badges when it does, instead of
+  // only looking at the first night's source.
   const hasForecast = days.some((d) => d.source === 'forecast')
   const hasHistorical = days.some((d) => d.source === 'historical')
-  const sourceLabel =
-    hasForecast && hasHistorical
-      ? `Forecast + historical · ${daysUntil(stop.startDate)}d out`
-      : hasForecast
-        ? `Forecast · ${daysUntil(stop.startDate)}d out`
-        : 'Historical avg'
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
@@ -139,12 +132,18 @@ export function StopCard({
             {formatElevation(days[0].elevationM, units)} elev.
           </div>
         </div>
-        <Badge
-          variant={hasForecast ? 'default' : 'secondary'}
-          className="self-start shrink-0 whitespace-nowrap"
-        >
-          {sourceLabel}
-        </Badge>
+        <div className="flex shrink-0 items-center gap-1.5 self-start">
+          {hasForecast && (
+            <Badge variant="default" className="whitespace-nowrap">
+              Forecast
+            </Badge>
+          )}
+          {hasHistorical && (
+            <Badge variant="secondary" className="whitespace-nowrap">
+              Historical avg
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="mt-4 flex items-end justify-between gap-3.5">
