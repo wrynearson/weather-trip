@@ -58,7 +58,11 @@ function buildChartData(stops: Stop[], dayStats: Record<string, DayStatsState>) 
 }
 
 export function shouldShowTripRangeChart(stops: Stop[], dayStats: Record<string, DayStatsState>): boolean {
-  return stops.filter((stop) => Array.isArray(dayStats[stop.id]) && dayStats[stop.id]!.length > 0).length >= 2
+  const totalDays = stops.reduce((sum, stop) => {
+    const days = dayStats[stop.id]
+    return sum + (Array.isArray(days) ? days.length : 0)
+  }, 0)
+  return totalDays >= 2
 }
 
 type ConditionGroup = {
@@ -245,7 +249,7 @@ export function TripRangeChart({
     [conditionGroups, totalDays, iconRowWidth],
   )
 
-  if (spans.length < 2) return null
+  if (points.length < 2) return null
 
   return (
     <div className="mt-3.5 rounded-lg border border-border bg-card p-3">
