@@ -159,6 +159,11 @@ const FAMILY_REPRESENTATIVE: Record<string, Condition> = {
   thunderstorm: 'thunderstorm',
 }
 
+export type RankedCondition = {
+  condition: Condition
+  frequency: number // share of days in this family, 0-1
+}
+
 /**
  * Ranks days by how often each weather family occurs, most frequent first
  * (e.g. 3 clear-sky + 2 rain-heavy + 1 rain-slight nights -> ['clear-sky',
@@ -166,7 +171,7 @@ const FAMILY_REPRESENTATIVE: Record<string, Condition> = {
  * any severity counts as one "rain" family — so the result reads as the
  * trip's or stop's dominant weather, not a list of every code that occurred.
  */
-export function rankConditions(days: DayStats[], limit = 3): Condition[] {
+export function rankConditions(days: DayStats[], limit = 3): RankedCondition[] {
   const counts = new Map<string, number>()
   for (const day of days) {
     const family = CONDITION_FAMILY[classifyDay(day)]
@@ -176,5 +181,8 @@ export function rankConditions(days: DayStats[], limit = 3): Condition[] {
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, limit)
-    .map(([family]) => FAMILY_REPRESENTATIVE[family])
+    .map(([family, count]) => ({
+      condition: FAMILY_REPRESENTATIVE[family],
+      frequency: count / days.length,
+    }))
 }

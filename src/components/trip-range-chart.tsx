@@ -197,11 +197,13 @@ function ChartTooltip({
 export function ChartLegend() {
   return (
     <div className="flex items-center gap-3 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-      <span className="flex items-center gap-1">
-        <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/30" /> historical range
+      <span className="flex items-center gap-1" title="Historical range">
+        <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/30" />
+        <span className="hidden sm:inline">historical range</span>
       </span>
-      <span className="flex items-center gap-1">
-        <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/60" /> avg min/max
+      <span className="flex items-center gap-1" title="Avg min/max">
+        <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/60" />
+        <span className="hidden sm:inline">avg min/max</span>
       </span>
     </div>
   )
@@ -259,7 +261,7 @@ export function TripRangeChart({
         ))}
       </div>
 
-      <ResponsiveContainer width="100%" height={120}>
+      <ResponsiveContainer width="100%" height={132}>
         <ComposedChart data={points} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
           <CartesianGrid horizontal vertical={false} stroke="var(--border)" strokeDasharray="2 2" />
           <XAxis dataKey="index" type="number" domain={[0, points.length - 1]} hide />

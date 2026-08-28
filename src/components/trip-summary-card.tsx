@@ -23,27 +23,33 @@ export function TripSummaryCard() {
   return (
     <Card className="sticky top-0 z-10 shadow-lg">
       <CardContent>
-        <div className="relative flex items-start justify-between gap-4">
+        <div className="relative flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="flex flex-wrap items-center gap-4">
             <span className="flex items-center gap-1">
-              {topConditions.map((condition) => (
-                <ConditionIcon key={condition} condition={condition} title={CONDITION_LABEL[condition]} />
+              {topConditions.map(({ condition, frequency }) => (
+                <ConditionIcon
+                  key={condition}
+                  condition={condition}
+                  title={`${CONDITION_LABEL[condition]} · ${Math.round(frequency * 100)}%`}
+                />
               ))}
             </span>
-            <div className="flex items-baseline gap-1.5 text-sm">
+            <div className="flex items-baseline gap-1.5 text-sm whitespace-nowrap">
               <span className="text-muted-foreground">Trip low</span>
               <span className="font-mono font-medium">{formatTemp(low, units)}</span>
             </div>
-            <div className="flex items-baseline gap-1.5 text-sm">
+            <div className="flex items-baseline gap-1.5 text-sm whitespace-nowrap">
               <span className="text-muted-foreground">Trip high</span>
               <span className="font-mono font-medium">{formatTemp(high, units)}</span>
             </div>
           </div>
-          <div className="absolute left-1/2 hidden -translate-x-1/2 text-sm text-muted-foreground sm:block">
+          <div className="text-sm text-muted-foreground sm:absolute sm:left-1/2 sm:-translate-x-1/2">
             {allDays.length} {allDays.length === 1 ? 'day' : 'days'} · {stops.length}{' '}
             {stops.length === 1 ? 'stop' : 'stops'}
           </div>
-          <div className="shrink-0">{shouldShowTripRangeChart(stops, dayStats) && <ChartLegend />}</div>
+          <div className="shrink-0 self-end sm:self-auto">
+            {shouldShowTripRangeChart(stops, dayStats) && <ChartLegend />}
+          </div>
         </div>
         <TripRangeChart stops={stops} dayStats={dayStats} units={units} />
       </CardContent>

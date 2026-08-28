@@ -101,13 +101,17 @@ export function StopCard({
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-lg font-semibold tracking-tight">{stop.city}</span>
             <span className="flex items-center gap-1">
-              {topConditions.map((condition) => (
-                <ConditionIcon key={condition} condition={condition} title={CONDITION_LABEL[condition]} />
+              {topConditions.map(({ condition, frequency }) => (
+                <ConditionIcon
+                  key={condition}
+                  condition={condition}
+                  title={`${CONDITION_LABEL[condition]} · ${Math.round(frequency * 100)}%`}
+                />
               ))}
             </span>
             <span className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -124,7 +128,10 @@ export function StopCard({
             {formatElevation(days[0].elevationM, units)} elev.
           </div>
         </div>
-        <Badge variant={source === 'forecast' ? 'default' : 'secondary'} className="shrink-0 whitespace-nowrap">
+        <Badge
+          variant={source === 'forecast' ? 'default' : 'secondary'}
+          className="self-start shrink-0 whitespace-nowrap"
+        >
           {sourceLabel}
         </Badge>
       </div>
