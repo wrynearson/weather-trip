@@ -140,7 +140,7 @@ export function StopCard({
           )}
           {hasHistorical && (
             <Badge variant="secondary" className="whitespace-nowrap">
-              Historical avg
+              Historical
             </Badge>
           )}
         </div>
