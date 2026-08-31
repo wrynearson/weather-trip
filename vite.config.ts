@@ -14,7 +14,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     setupFiles: ['./vitest.setup.ts'],
     // Pin the test process to UTC so date-boundary logic (daysUntil, etc.)
     // is deterministic regardless of the machine/CI runner's local timezone.

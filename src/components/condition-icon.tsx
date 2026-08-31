@@ -65,7 +65,7 @@ export function ConditionIcon({
 }) {
   const Icon = CONDITION_ICON[condition]
   return (
-    <span title={title}>
+    <span title={title} aria-label={title} aria-hidden={title ? undefined : true}>
       <Icon className={cn('size-4 text-muted-foreground', className)} />
     </span>
   )
