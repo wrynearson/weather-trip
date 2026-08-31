@@ -125,7 +125,7 @@ export async function getHistoricalRecordRanges(
 // All years pooled onto one non-leap-aware calendar, ±spanDays around `date`,
 // as "MM-DD" strings — e.g. Jun 15 ±3 -> Jun 12..Jun 18, wrapping year
 // boundaries correctly (Jan 1 ±3 reaches into December).
-function monthDayWindow(date: string, spanDays: number): Set<string> {
+export function monthDayWindow(date: string, spanDays: number): Set<string> {
   const [year, month, day] = date.split('-').map(Number)
   const base = new Date(Date.UTC(year, month - 1, day))
   const window = new Set<string>()
