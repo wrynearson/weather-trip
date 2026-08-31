@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { useTripStore } from '@/store/trip-store'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChartLegend, TripRangeChart, shouldShowTripRangeChart } from '@/components/trip-range-chart'
@@ -52,7 +53,9 @@ export function TripSummaryCard() {
             {shouldShowTripRangeChart(stops, dayStats) && <ChartLegend />}
           </div>
         </div>
-        <TripRangeChart stops={stops} dayStats={dayStats} units={units} />
+        <Suspense fallback={null}>
+          <TripRangeChart stops={stops} dayStats={dayStats} units={units} />
+        </Suspense>
       </CardContent>
     </Card>
   )
