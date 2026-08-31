@@ -1,6 +1,6 @@
 ---
 severity: low
-status: open
+status: fixed
 area: geocode
 ---
 

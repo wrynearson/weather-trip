@@ -34,7 +34,9 @@ let activeController: AbortController | undefined
 /**
  * Debounced Nominatim search. Only the most recently requested call resolves
  * with real results — any call superseded by a newer one before it settles
- * never resolves, so callers only need to handle the latest response.
+ * never resolves (nor rejects), so callers only need to handle the latest
+ * response. A genuine fetch failure (network error, non-2xx status) rejects
+ * so callers can tell "search failed" apart from "no matches".
  */
 export function searchLocations(query: string): Promise<GeocodeResult[]> {
   const trimmed = query.trim()
@@ -46,7 +48,7 @@ export function searchLocations(query: string): Promise<GeocodeResult[]> {
     return Promise.resolve([])
   }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     debounceTimer = setTimeout(() => {
       const controller = new AbortController()
       activeController = controller
@@ -58,13 +60,16 @@ export function searchLocations(query: string): Promise<GeocodeResult[]> {
       url.searchParams.set('q', trimmed)
 
       fetch(url, { signal: controller.signal, headers: { Accept: 'application/json' } })
-        .then((response) => (response.ok ? response.json() : []))
+        .then((response) => {
+          if (!response.ok) throw new Error(`Nominatim search failed: ${response.status}`)
+          return response.json()
+        })
         .then((data: unknown) => {
           resolve(Array.isArray(data) ? data.slice(0, RESULT_LIMIT).map(toGeocodeResult) : [])
         })
         .catch((error: unknown) => {
           if (error instanceof DOMException && error.name === 'AbortError') return
-          resolve([])
+          reject(error instanceof Error ? error : new Error('Nominatim search failed'))
         })
     }, DEBOUNCE_MS)
   })

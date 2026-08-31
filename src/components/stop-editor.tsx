@@ -30,6 +30,7 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
   const [query, setQuery] = useState(initial.query)
   const [picked, setPicked] = useState<GeocodeResult | null>(initial.picked)
   const [suggestions, setSuggestions] = useState<GeocodeResult[]>([])
+  const [searchFailed, setSearchFailed] = useState(false)
   const [startDate, setStartDate] = useState(initial.startDate)
   const [nightsInput, setNightsInput] = useState(String(initial.nights))
 
@@ -59,7 +60,13 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
     if (picked && value !== picked.name) {
       setPicked(null)
     }
-    searchLocations(value).then(setSuggestions)
+    setSearchFailed(false)
+    searchLocations(value)
+      .then(setSuggestions)
+      .catch(() => {
+        setSuggestions([])
+        setSearchFailed(true)
+      })
   }
 
   function handleQueryKeyDown(e: React.KeyboardEvent) {
@@ -125,6 +132,11 @@ export function StopEditor({ heading, initial, onCancel, onSave, onDelete }: Sto
                   <span className="text-xs text-muted-foreground">{s.region}</span>
                 </button>
               ))}
+            </div>
+          )}
+          {searchFailed && suggestions.length === 0 && (
+            <div className="absolute top-full right-0 left-0 z-40 mt-1.5 rounded-lg border border-border bg-popover px-3 py-2 text-xs text-muted-foreground shadow-lg">
+              Search failed, try again.
             </div>
           )}
         </div>
