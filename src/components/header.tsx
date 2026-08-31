@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { Info, Monitor, Moon, Sun, Trash2 } from 'lucide-react'
+import { Info, Monitor, Moon, Sun } from 'lucide-react'
 import { useTripStore } from '@/store/trip-store'
 import { useThemeStore, type Theme } from '@/hooks/use-theme'
 import { Button } from '@/components/ui/button'
@@ -11,7 +10,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light theme', icon: Sun },
@@ -20,9 +18,8 @@ const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
 ]
 
 export function Header() {
-  const { stops, units, setUnits, clearTrip } = useTripStore()
+  const { units, setUnits } = useTripStore()
   const { theme, setTheme } = useThemeStore()
-  const [confirmClearOpen, setConfirmClearOpen] = useState(false)
 
   return (
     <header className="border-b border-border">
@@ -68,46 +65,6 @@ export function Header() {
                 </Button>
               ))}
             </div>
-
-            {/* Clear Trip */}
-            {stops.length > 0 && (
-              <Popover open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
-                <PopoverTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    />
-                  }
-                >
-                  <Trash2 />
-                  <span className="sr-only">Clear trip</span>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-56">
-                  <p className="text-sm">Clear this trip? This can&apos;t be undone.</p>
-                  <div className="mt-3 flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setConfirmClearOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        clearTrip()
-                        setConfirmClearOpen(false)
-                      }}
-                    >
-                      Clear trip
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
 
             {/* About Button */}
             <Dialog>

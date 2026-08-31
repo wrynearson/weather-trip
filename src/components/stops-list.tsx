@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Trash2 } from 'lucide-react'
 import { useTripStore } from '@/store/trip-store'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { StopCard } from '@/components/stop-card'
 import { StopEditor, type StopDraft } from '@/components/stop-editor'
 import { fetchStopWeather } from '@/lib/fetch-stop-weather'
@@ -9,9 +10,10 @@ import { addDaysISO } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 
 export function StopsList() {
-  const { stops, dayStats, units, addStop, updateStop, removeStop } = useTripStore()
+  const { stops, dayStats, units, addStop, updateStop, removeStop, clearTrip } = useTripStore()
   const [editingId, setEditingId] = useState<string | 'new' | null>(null)
   const [collapsed, setCollapsed] = useState(false)
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false)
 
   useEffect(() => {
     // Stagger initial fetches (e.g. on page load with several saved stops)
@@ -118,13 +120,54 @@ export function StopsList() {
           )}
 
           {editingId !== 'new' && (
-            <button
-              type="button"
-              onClick={() => setEditingId('new')}
-              className="ml-9 rounded-xl border border-dashed border-border px-4.5 py-3.5 text-left text-sm font-medium text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-primary"
-            >
-              + Add stop
-            </button>
+            <div className="ml-9 mt-3 flex items-center gap-2">
+              {/* Clear Trip */}
+              <Popover open={confirmClearOpen} onOpenChange={setConfirmClearOpen}>
+                <PopoverTrigger
+                  render={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    />
+                  }
+                >
+                  <Trash2 />
+                  <span className="sr-only">Clear trip</span>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-56">
+                  <p className="text-sm">Clear this trip? This can&apos;t be undone.</p>
+                  <div className="mt-3 flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmClearOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        clearTrip()
+                        setConfirmClearOpen(false)
+                      }}
+                    >
+                      Clear trip
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <button
+                type="button"
+                onClick={() => setEditingId('new')}
+                className="rounded-xl border border-dashed border-border px-4.5 py-3.5 text-left text-sm font-medium text-muted-foreground hover:border-primary hover:bg-primary/5 hover:text-primary"
+              >
+                + Add stop
+              </button>
+            </div>
           )}
         </>
       )}
