@@ -13,6 +13,33 @@ function generateStopId(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+function isValidStop(value: unknown): value is Stop {
+  if (typeof value !== 'object' || value === null) return false
+  const s = value as Record<string, unknown>
+  return (
+    typeof s.id === 'string' &&
+    typeof s.city === 'string' &&
+    typeof s.region === 'string' &&
+    typeof s.lat === 'number' &&
+    Number.isFinite(s.lat) &&
+    typeof s.lon === 'number' &&
+    Number.isFinite(s.lon) &&
+    typeof s.startDate === 'string' &&
+    s.startDate.length > 0 &&
+    typeof s.nights === 'number' &&
+    Number.isFinite(s.nights) &&
+    s.nights > 0
+  )
+}
+
+export function sanitizeStops(value: unknown): Stop[] {
+  if (!Array.isArray(value)) return []
+  return value.filter(isValidStop)
+}
+
+// Shape actually written to localStorage (see `partialize` below).
+type PersistedTripState = { stops: Stop[]; units: Units }
+
 type TripState = {
   stops: Stop[]
   dayStats: Record<string, DayStatsState>
@@ -21,9 +48,22 @@ type TripState = {
   updateStop: (id: string, patch: Partial<Omit<Stop, 'id'>>) => void
   removeStop: (id: string) => void
   setUnits: (units: Units) => void
-  setDayStats: (id: string, state: DayStatsState) => void
+  // Starts a new fetch "generation" for a stop: bumps its request version,
+  // marks it loading, and returns the version so the caller can later check
+  // whether its own fetch is still the latest before committing a result.
+  beginFetch: (id: string) => number
+  // Commits a fetch result only if `version` is still the latest one issued
+  // for `id` — otherwise a slower, older fetch is silently dropped instead
+  // of overwriting a newer result (see ticket 002).
+  commitDayStats: (id: string, version: number, state: DayStatsState) => void
   clearTrip: () => void
 }
+
+// Latest fetch-request version per stop id. Internal bookkeeping only —
+// intentionally not part of TripState/DayStatsState, so consumer components
+// (stop-card, trip-summary-card, trip-range-chart) never see it and keep
+// reading `dayStats` exactly as before.
+const fetchVersions: Record<string, number> = {}
 
 export const useTripStore = create<TripState>()(
   persist(
@@ -67,7 +107,17 @@ export const useTripStore = create<TripState>()(
 
       setUnits: (units) => set({ units }),
 
-      setDayStats: (id, state) => {
+      beginFetch: (id) => {
+        const version = (fetchVersions[id] ?? 0) + 1
+        fetchVersions[id] = version
+        set((prev) => ({ dayStats: { ...prev.dayStats, [id]: 'loading' } }))
+        return version
+      },
+
+      commitDayStats: (id, version, state) => {
+        // A newer fetch for this stop id has started since this one began —
+        // this result is stale, so drop it instead of overwriting.
+        if (fetchVersions[id] !== version) return
         set((prev) => ({ dayStats: { ...prev.dayStats, [id]: state } }))
       },
 
@@ -75,7 +125,29 @@ export const useTripStore = create<TripState>()(
     }),
     {
       name: 'weather-trip:v1',
+      version: 1,
       partialize: (state) => ({ stops: state.stops, units: state.units }),
+      // No schema changes yet — this is a no-op seam so future breaking
+      // changes to the persisted shape have somewhere to add a migration.
+      migrate: (persistedState) => {
+        const persisted = (persistedState ?? {}) as Partial<PersistedTripState>
+        return {
+          stops: sanitizeStops(persisted.stops),
+          units: persisted.units === 'F' ? 'F' : 'C',
+        }
+      },
+      // Runs on every rehydration (not just version bumps), so this is
+      // where we validate localStorage contents rather than trusting them:
+      // manual edits, partial writes, or a future schema change could hand
+      // us malformed stops otherwise (ticket 005).
+      merge: (persistedState, currentState) => {
+        const persisted = (persistedState ?? {}) as Partial<PersistedTripState>
+        return {
+          ...currentState,
+          stops: sanitizeStops(persisted.stops),
+          units: persisted.units === 'F' ? 'F' : 'C',
+        }
+      },
     },
   ),
 )
