@@ -4,7 +4,14 @@ import { cacheKey, fetchDailySeriesCached, type DailySeries } from './open-meteo
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
 const FORECAST_DAYS = 16
-const FORECAST_THRESHOLD_DAYS = 15
+// One less than FORECAST_DAYS - 1 (the API's max): Open-Meteo's daily
+// aggregates need a full day of hourly source data, and the *last* day of
+// any forecast_days request never has one yet, so every field (not just
+// precipitation_probability_max, see aggregateForecastDay) comes back null
+// for it. forecast_days caps at 16 — there's no buffer day to request
+// instead — so that last index is simply never trusted as "forecast";
+// dates that far out fall to the historical path instead.
+const FORECAST_THRESHOLD_DAYS = 14
 const WET_DAY_THRESHOLD_MM = 1
 
 // Open-Meteo's forecast model refreshes a few times a day — a few hours of
@@ -51,8 +58,8 @@ export function fetchForecastSeries(lat: number, lon: number): Promise<DailySeri
  */
 export async function getDayStats(stop: Stop): Promise<DayStats[]> {
   const dates = stopDates(stop)
-  const forecastDates = dates.filter((date) => daysUntil(date) <= FORECAST_THRESHOLD_DAYS)
-  const historicalDates = dates.filter((date) => daysUntil(date) > FORECAST_THRESHOLD_DAYS)
+  const forecastDates = dates.filter((date) => daysUntil(date) >= 0 && daysUntil(date) <= FORECAST_THRESHOLD_DAYS)
+  const historicalDates = dates.filter((date) => daysUntil(date) < 0 || daysUntil(date) > FORECAST_THRESHOLD_DAYS)
 
   if (historicalDates.length === 0) {
     return getForecastDayStats(stop.lat, stop.lon, dates)
@@ -85,9 +92,9 @@ function aggregateForecastDay(series: DailySeries, date: string, recordRange: Re
   // Optional chaining guards against a pre-existing localStorage cache entry
   // from before this field existed — old cached series won't have it.
   const precipProbability = index >= 0 ? (series.precipProbabilityMax?.[index] ?? null) : null
-  // Open-Meteo returns null probability for the last day of a 16-day request
-  // (that day never gets a full 24h of hourly data to aggregate) — which is
-  // always our forecast/historical boundary day. Fall back to a binary
+  // Open-Meteo can return null probability for the tail days of a 16-day
+  // request (they don't get a full 24h of hourly data to aggregate) — which
+  // includes our forecast/historical boundary day. Fall back to a binary
   // estimate from the precip total rather than showing no chance at all.
   const wetDayProbability =
     precipProbability != null
