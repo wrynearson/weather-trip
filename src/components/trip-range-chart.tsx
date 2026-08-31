@@ -4,7 +4,7 @@ import type { DayStats, Stop, Units } from '@/types'
 import type { DayStatsState } from '@/store/trip-store'
 import { CONDITION_ICON, ConditionIcon } from '@/components/condition-icon'
 import { Badge } from '@/components/ui/badge'
-import { classifyDay, CONDITION_LABEL, type Condition } from '@/condition'
+import { classifyDay, CONDITION_LABEL, isForecastGradeWetDay, type Condition } from '@/condition'
 import { formatPercent, formatPrecip, formatTemp } from '@/lib/units'
 import { maxOrNaN, minOrNaN, validNumbers } from '@/lib/utils'
 
@@ -198,7 +198,10 @@ function ChartTooltip({
         </span>
       </div>
       <div className="mt-1 text-xs text-muted-foreground">
-        {formatPercent(datum.wetDayProbability)} precipitation chance
+        {formatPercent(datum.wetDayProbability)}{' '}
+        {isForecastGradeWetDay(datum.source === 'forecast', datum.source === 'historical')
+          ? 'precipitation chance'
+          : 'historically wet'}
         <span className="mx-1">·</span>
         {formatPrecip(datum.precipMean, units)} {datum.source === 'historical' ? 'avg' : 'total'}
       </div>

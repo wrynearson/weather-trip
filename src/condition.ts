@@ -106,6 +106,16 @@ export function classifyDay(stats: DayStats): Condition {
   return WEATHER_CODE_CONDITION[stats.weatherCode] ?? 'unknown'
 }
 
+/**
+ * A wet-day % is only a real forecast-grade "chance" when every day behind
+ * it came from the forecast API. Any historical day mixed in means part (or
+ * all) of the number is a 30-year frequency instead, so treat mixed the same
+ * as historical rather than overclaiming forecast precision.
+ */
+export function isForecastGradeWetDay(hasForecast: boolean, hasHistorical: boolean): boolean {
+  return hasForecast && !hasHistorical
+}
+
 // Groups conditions that differ only by intensity (e.g. rain-slight vs.
 // rain-heavy are both "rain") so overview icon rows show one icon per
 // weather phenomenon instead of one per intensity tier. Distinct phenomena

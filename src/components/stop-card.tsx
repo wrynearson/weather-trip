@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ConditionIcon } from '@/components/condition-icon'
 import { StopEditor, type StopDraft } from '@/components/stop-editor'
-import { CONDITION_LABEL, rankConditions } from '@/condition'
+import { CONDITION_LABEL, isForecastGradeWetDay, rankConditions } from '@/condition'
 import { formatElevation, formatPercent, formatTemp } from '@/lib/units'
 import { formatDateRange, formatNights } from '@/lib/dates'
 import { mean } from '@/open-meteo'
@@ -102,6 +102,10 @@ export function StopCard({
   // only looking at the first night's source.
   const hasForecast = days.some((d) => d.source === 'forecast')
   const hasHistorical = days.some((d) => d.source === 'historical')
+  // Only a pure-forecast stop's wet-day % is a real forecast-grade "chance" —
+  // a historical-only or mixed stop's average is (partly) a 30-year
+  // frequency, so label it as such instead of overclaiming precision.
+  const wetDayLabel = isForecastGradeWetDay(hasForecast, hasHistorical) ? 'Precipitation chance' : 'Historically wet'
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
@@ -166,7 +170,7 @@ export function StopCard({
           </div>
           <div>
             <div className="text-[10.5px] font-semibold tracking-wider text-muted-foreground uppercase">
-              Precipitation chance
+              {wetDayLabel}
             </div>
             <div className="mt-0.5 font-mono text-2xl font-medium tracking-tight text-muted-foreground">
               {formatPercent(wetDayProbability)}
