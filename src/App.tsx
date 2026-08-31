@@ -1,7 +1,6 @@
 import { Header } from '@/components/header'
 import { TripSummaryCard } from '@/components/trip-summary-card'
 import { StopsList } from '@/components/stops-list'
-import { VersionChip } from '@/components/version-chip'
 
 function App() {
   return (
@@ -11,9 +10,6 @@ function App() {
         <TripSummaryCard />
         <div className="mt-6">
           <StopsList />
-        </div>
-        <div className="mt-6 flex justify-end">
-          <VersionChip />
         </div>
       </main>
     </div>

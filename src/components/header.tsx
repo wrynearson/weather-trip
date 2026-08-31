@@ -126,6 +126,16 @@ export function Header() {
                     .
                   </p>
                   <p>Your trip is saved only in your browser.</p>
+                  <p className="text-muted-foreground">
+                    Version{' '}
+                    <a
+                      href={`https://github.com/wrynearson/weather-trip/releases/tag/v${__APP_VERSION__}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {__APP_VERSION__}
+                    </a>
+                  </p>
                 </DialogDescription>
               </DialogContent>
             </Dialog>
