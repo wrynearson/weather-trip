@@ -52,6 +52,36 @@ describe('sanitizeStops', () => {
   })
 })
 
+describe('stop ordering', () => {
+  beforeEach(() => {
+    useTripStore.setState({ stops: [], dayStats: {} })
+  })
+
+  const { id: _id, ...draft } = validStop
+
+  it('keeps stops sorted by startDate when a later-dated stop is added first', () => {
+    const laterId = useTripStore.getState().addStop()
+    useTripStore.getState().updateStop(laterId, { ...draft, startDate: '2024-06-10' })
+
+    const earlierId = useTripStore.getState().addStop()
+    useTripStore.getState().updateStop(earlierId, { ...draft, startDate: '2024-06-01' })
+
+    expect(useTripStore.getState().stops.map((s) => s.id)).toEqual([earlierId, laterId])
+  })
+
+  it('reorders when an existing stop is edited to an earlier date', () => {
+    const firstId = useTripStore.getState().addStop()
+    useTripStore.getState().updateStop(firstId, { ...draft, startDate: '2024-06-05' })
+
+    const secondId = useTripStore.getState().addStop()
+    useTripStore.getState().updateStop(secondId, { ...draft, startDate: '2024-06-10' })
+
+    useTripStore.getState().updateStop(secondId, { startDate: '2024-06-01' })
+
+    expect(useTripStore.getState().stops.map((s) => s.id)).toEqual([secondId, firstId])
+  })
+})
+
 describe('beginFetch/commitDayStats versioning', () => {
   beforeEach(() => {
     useTripStore.setState({ stops: [], dayStats: {} })

@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Area, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import type { MouseHandlerDataParam } from 'recharts'
 import type { DayStats, Stop, Units } from '@/types'
 import type { DayStatsState } from '@/store/trip-store'
 import { CONDITION_ICON, ConditionIcon } from '@/components/condition-icon'
@@ -149,60 +150,52 @@ function computeAxisBounds(points: ChartDatum[]): { min: number; max: number } {
   return { min, max: max > min ? max : min + 10 }
 }
 
-function ChartTooltip({
-  active,
-  payload,
-  units,
-}: {
-  active?: boolean
-  payload?: Array<{ payload: ChartDatum }>
-  units: Units
-}) {
-  if (!active || !payload?.length) return null
-  const datum = payload[0].payload
+// Docked below the chart instead of floating over it (see issue #25 — a
+// cursor-anchored tooltip covers the plot it's describing, which is
+// especially bad on the narrow, short viewports scrubbing happens on most).
+// Both states share one fixed height so scrubbing starting/stopping never
+// shifts the chart or anything below it.
+const ACTIVE_DETAIL_HEIGHT = 'h-17'
+
+function ChartActiveDetail({ datum, units }: { datum: ChartDatum | null; units: Units }) {
+  if (!datum) {
+    return (
+      <div
+        className={`mt-2 flex ${ACTIVE_DETAIL_HEIGHT} items-center justify-center rounded-md border border-dashed border-border px-3 text-center text-xs text-muted-foreground`}
+      >
+        Hover or drag the chart for day details
+      </div>
+    )
+  }
+
   const condition = classifyDay(datum)
+  const wetLabel = isForecastGradeWetDay(datum.source === 'forecast', datum.source === 'historical')
+    ? 'precip chance'
+    : 'historically wet'
+  const precipSuffix = datum.source === 'historical' ? 'avg' : 'total'
+  const rangeLine = `${formatTemp(datum.avgLow, units)}–${formatTemp(datum.avgHigh, units)} avg · ${formatTemp(datum.recordLow, units)}–${formatTemp(datum.recordHigh, units)} record`
+  const precipLine = `${formatPercent(datum.wetDayProbability)} ${wetLabel} · ${formatPrecip(datum.precipMean, units)} ${precipSuffix}`
 
   return (
-    <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-lg">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="text-sm font-semibold">{datum.stopName}</div>
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <ConditionIcon condition={condition} />
-              {CONDITION_LABEL[condition]}
-            </span>
-          </div>
-          <div className="text-xs text-muted-foreground">{datum.date}</div>
+    <div
+      className={`mt-2 flex ${ACTIVE_DETAIL_HEIGHT} flex-col justify-center gap-1 rounded-md border border-border bg-muted/30 px-3 py-1.5`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <span className="truncate text-xs font-semibold">{datum.stopName}</span>
+          <span className="shrink-0 text-[10px] text-muted-foreground">{datum.date}</span>
+          <ConditionIcon condition={condition} className="size-3.5 shrink-0" title={CONDITION_LABEL[condition]} />
         </div>
         <Badge variant={datum.source === 'forecast' ? 'default' : 'secondary'} className="shrink-0 text-[9px]">
           {datum.source === 'forecast' ? 'Forecast' : 'Historical'}
         </Badge>
       </div>
-      <div className="mt-1.5 flex gap-3 font-mono text-xs">
-        <span>
-          {datum.source === 'historical' && <span className="text-muted-foreground">avg</span>}{' '}
-          {formatTemp(datum.avgLow, units)}
-          <span className="mx-0.5">·</span>
-          {formatTemp(datum.avgHigh, units)}
-        </span>
-        <span>
-          {/* Same 30-year record band regardless of source — forecast days
-              reuse it too, see climatology.ts getHistoricalRecordRanges. */}
-          <span className="text-muted-foreground">range</span>{' '}
-          {formatTemp(datum.recordLow, units)}
-          <span className="mx-0.5">·</span>
-          {formatTemp(datum.recordHigh, units)}
-        </span>
-      </div>
-      <div className="mt-1 text-xs text-muted-foreground">
-        {formatPercent(datum.wetDayProbability)}{' '}
-        {isForecastGradeWetDay(datum.source === 'forecast', datum.source === 'historical')
-          ? 'precipitation chance'
-          : 'historically wet'}
-        <span className="mx-1">·</span>
-        {formatPrecip(datum.precipMean, units)} {datum.source === 'historical' ? 'avg' : 'total'}
-      </div>
+      {/* Same 30-year record band regardless of source — forecast days
+          reuse it too, see climatology.ts getHistoricalRecordRanges. Two
+          dedicated rows (not flex-wrap) so both precip variables always
+          show in full instead of getting wrapped or truncated away. */}
+      <div className="truncate font-mono text-[10px] text-muted-foreground">{rangeLine}</div>
+      <div className="truncate font-mono text-[10px] text-muted-foreground">{precipLine}</div>
     </div>
   )
 }
@@ -243,7 +236,19 @@ function TripRangeChart({
     [conditionGroups, totalDays, iconRowWidth],
   )
 
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
+  const handleActivity = useCallback(({ activeTooltipIndex }: MouseHandlerDataParam) => {
+    const index = Number(activeTooltipIndex)
+    if (Number.isFinite(index)) setActiveIndex(index)
+  }, [])
+  // Only mouseleave clears the active point — touchend doesn't, so lifting a
+  // finger after scrubbing leaves the last day's details on screen instead of
+  // snapping back to the placeholder.
+  const handleMouseLeave = useCallback(() => setActiveIndex(null), [])
+
   if (points.length < 2) return null
+
+  const activeDatum = activeIndex !== null ? (points[activeIndex] ?? null) : null
 
   return (
     <div className="mt-3.5 rounded-lg border border-border bg-card p-3">
@@ -260,7 +265,13 @@ function TripRangeChart({
       </div>
 
       <ResponsiveContainer width="100%" height={132}>
-        <ComposedChart data={points} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+        <ComposedChart
+          data={points}
+          margin={{ top: 4, right: 0, left: 0, bottom: 0 }}
+          onMouseMove={handleActivity}
+          onTouchMove={handleActivity}
+          onMouseLeave={handleMouseLeave}
+        >
           <CartesianGrid horizontal vertical={false} stroke="var(--border)" strokeDasharray="2 2" />
           <XAxis dataKey="index" type="number" domain={[0, points.length - 1]} hide />
           <YAxis
@@ -272,10 +283,9 @@ function TripRangeChart({
             tick={{ fontSize: 9, fill: 'var(--muted-foreground)' }}
             tickFormatter={(value: number) => formatTemp(value, units)}
           />
-          <Tooltip
-            content={<ChartTooltip units={units} />}
-            cursor={{ stroke: 'var(--border)', strokeDasharray: '2 2' }}
-          />
+          {/* content renders nothing — the docked ChartActiveDetail row below
+              replaces the floating box; the cursor line still draws here. */}
+          <Tooltip content={() => null} cursor={{ stroke: 'var(--border)', strokeDasharray: '2 2' }} />
           <Area dataKey="recordSpanBase" stackId="record" stroke="none" fill="transparent" isAnimationActive={false} />
           <Area
             dataKey="recordSpan"
@@ -309,6 +319,8 @@ function TripRangeChart({
           </span>
         ))}
       </div>
+
+      <ChartActiveDetail datum={activeDatum} units={units} />
     </div>
   )
 }

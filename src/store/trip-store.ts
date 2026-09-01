@@ -37,6 +37,14 @@ export function sanitizeStops(value: unknown): Stop[] {
   return value.filter(isValidStop)
 }
 
+// Every consumer (stop numbering, the range chart, the "next stop" default
+// date) treats array order as chronological order, so stops must stay
+// sorted by startDate at all times rather than in insertion order. Sort is
+// stable so same-day stops keep their relative order.
+function sortStopsByDate(stops: Stop[]): Stop[] {
+  return [...stops].sort((a, b) => a.startDate.localeCompare(b.startDate))
+}
+
 // Shape actually written to localStorage (see `partialize` below).
 type PersistedTripState = { stops: Stop[]; units: Units }
 
@@ -83,14 +91,14 @@ export const useTripStore = create<TripState>()(
           startDate: '',
           nights: 1,
         }
-        set((state) => ({ stops: [...state.stops, stop] }))
+        set((state) => ({ stops: sortStopsByDate([...state.stops, stop]) }))
         return id
       },
 
       updateStop: (id, patch) => {
         set((state) => ({
-          stops: state.stops.map((stop) =>
-            stop.id === id ? { ...stop, ...patch } : stop,
+          stops: sortStopsByDate(
+            state.stops.map((stop) => (stop.id === id ? { ...stop, ...patch } : stop)),
           ),
         }))
       },
@@ -132,7 +140,7 @@ export const useTripStore = create<TripState>()(
       migrate: (persistedState) => {
         const persisted = (persistedState ?? {}) as Partial<PersistedTripState>
         return {
-          stops: sanitizeStops(persisted.stops),
+          stops: sortStopsByDate(sanitizeStops(persisted.stops)),
           units: persisted.units === 'F' ? 'F' : 'C',
         }
       },
@@ -144,7 +152,7 @@ export const useTripStore = create<TripState>()(
         const persisted = (persistedState ?? {}) as Partial<PersistedTripState>
         return {
           ...currentState,
-          stops: sanitizeStops(persisted.stops),
+          stops: sortStopsByDate(sanitizeStops(persisted.stops)),
           units: persisted.units === 'F' ? 'F' : 'C',
         }
       },
