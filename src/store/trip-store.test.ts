@@ -125,3 +125,34 @@ describe('beginFetch/commitDayStats versioning', () => {
     expect(useTripStore.getState().dayStats[id]).toBe('rate-limited')
   })
 })
+
+describe('loadTrip', () => {
+  beforeEach(() => {
+    useTripStore.setState({ stops: [], dayStats: {}, units: 'C' })
+  })
+
+  it('replaces stops and units, and clears dayStats', () => {
+    const existingId = useTripStore.getState().addStop()
+    const version = useTripStore.getState().beginFetch(existingId)
+    useTripStore.getState().commitDayStats(existingId, version, 'error')
+    expect(useTripStore.getState().dayStats[existingId]).toBe('error')
+
+    const incoming: Stop[] = [
+      { id: 'new-1', city: 'Tokyo', region: 'Japan', lat: 35.6, lon: 139.7, startDate: '2024-08-01', nights: 4 },
+    ]
+    useTripStore.getState().loadTrip(incoming, 'F')
+
+    expect(useTripStore.getState().stops).toEqual(incoming)
+    expect(useTripStore.getState().dayStats).toEqual({})
+    expect(useTripStore.getState().units).toBe('F')
+  })
+
+  it('sorts loaded stops chronologically by startDate', () => {
+    const later: Stop = { id: 'a', city: 'A', region: 'A', lat: 0, lon: 0, startDate: '2024-06-10', nights: 1 }
+    const earlier: Stop = { id: 'b', city: 'B', region: 'B', lat: 0, lon: 0, startDate: '2024-06-01', nights: 1 }
+
+    useTripStore.getState().loadTrip([later, earlier], 'C')
+
+    expect(useTripStore.getState().stops.map((s) => s.id)).toEqual(['b', 'a'])
+  })
+})
