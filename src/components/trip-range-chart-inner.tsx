@@ -173,7 +173,8 @@ function ChartActiveDetail({ datum, units }: { datum: ChartDatum | null; units: 
     ? 'precip chance'
     : 'historically wet'
   const precipSuffix = datum.source === 'historical' ? 'avg' : 'total'
-  const rangeLine = `${formatTemp(datum.avgLow, units)}–${formatTemp(datum.avgHigh, units)} avg · ${formatTemp(datum.recordLow, units)}–${formatTemp(datum.recordHigh, units)} record`
+  const rangeSuffix = datum.source === 'historical' ? 'avg' : 'forecast'
+  const rangeLine = `${formatTemp(datum.avgLow, units)}–${formatTemp(datum.avgHigh, units)} ${rangeSuffix} · ${formatTemp(datum.recordLow, units)}–${formatTemp(datum.recordHigh, units)} record`
   const precipLine = `${formatPercent(datum.wetDayProbability)} ${wetLabel} · ${formatPrecip(datum.precipMean, units)} ${precipSuffix}`
 
   return (
