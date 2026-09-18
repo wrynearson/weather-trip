@@ -8,7 +8,7 @@ export type DayStatsState = DayStats[] | 'loading' | 'error' | 'rate-limited'
 // testing over a LAN IP on a phone is unauthenticated http, where it's
 // missing entirely and throws. crypto.getRandomValues has no such
 // restriction, so build an id from that instead.
-function generateStopId(): string {
+export function generateStopId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16))
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
 }
@@ -56,6 +56,7 @@ type TripState = {
   updateStop: (id: string, patch: Partial<Omit<Stop, 'id'>>) => void
   removeStop: (id: string) => void
   setUnits: (units: Units) => void
+  loadTrip: (stops: Stop[], units: Units) => void
   // Starts a new fetch "generation" for a stop: bumps its request version,
   // marks it loading, and returns the version so the caller can later check
   // whether its own fetch is still the latest before committing a result.
@@ -114,6 +115,8 @@ export const useTripStore = create<TripState>()(
       },
 
       setUnits: (units) => set({ units }),
+
+      loadTrip: (stops, units) => set({ stops: sortStopsByDate(stops), dayStats: {}, units }),
 
       beginFetch: (id) => {
         const version = (fetchVersions[id] ?? 0) + 1
