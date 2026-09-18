@@ -105,7 +105,10 @@ export function StopCard({
   // Only a pure-forecast stop's wet-day % is a real forecast-grade "chance" —
   // a historical-only or mixed stop's average is (partly) a 30-year
   // frequency, so label it as such instead of overclaiming precision.
-  const wetDayLabel = isForecastGradeWetDay(hasForecast, hasHistorical) ? 'Precipitation chance' : 'Historically wet'
+  const isPureForecast = isForecastGradeWetDay(hasForecast, hasHistorical)
+  const wetDayLabel = isPureForecast ? 'Precipitation chance' : 'Historically wet'
+  const highLabel = isPureForecast ? 'Forecast high' : 'Typical high'
+  const lowLabel = isPureForecast ? 'Forecast low' : 'Typical low'
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
@@ -154,7 +157,7 @@ export function StopCard({
         <div className="grid flex-1 grid-cols-3 gap-3.5">
           <div>
             <div className="text-[10.5px] font-semibold tracking-wider text-muted-foreground uppercase">
-              Typical high
+              {highLabel}
             </div>
             <div className="mt-0.5 font-mono text-2xl font-medium tracking-tight">
               {formatTemp(avgHigh, units)}
@@ -162,7 +165,7 @@ export function StopCard({
           </div>
           <div>
             <div className="text-[10.5px] font-semibold tracking-wider text-muted-foreground uppercase">
-              Typical low
+              {lowLabel}
             </div>
             <div className="mt-0.5 font-mono text-2xl font-medium tracking-tight text-muted-foreground">
               {formatTemp(avgLow, units)}
