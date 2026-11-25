@@ -44,11 +44,26 @@ export function gapDaysBetweenStops(
   return daysBetweenISO(addDaysISO(stop.startDate, Math.max(1, stop.nights)), next.startDate)
 }
 
-export function formatGap(days: number): string {
-  if (days < 14) return `${days} ${days === 1 ? 'day' : 'days'} between stops`
-  if (days < 60) return `${Math.round(days / 7)} weeks between stops`
-  if (days < 335) return `${Math.round(days / 30)} months between stops`
+type GapAmount = { value: number; unit: 'day' | 'week' | 'month' | 'year' }
+
+// One place for the unit thresholds so the long and short labels can't drift.
+function gapAmount(days: number): GapAmount {
+  if (days < 14) return { value: days, unit: 'day' }
+  if (days < 60) return { value: Math.round(days / 7), unit: 'week' }
+  if (days < 335) return { value: Math.round(days / 30), unit: 'month' }
   // Nearest half year, so 400 days reads "1 year" and 600 days "1.5 years".
-  const years = Math.round((days / 365) * 2) / 2
-  return `${years} ${years === 1 ? 'year' : 'years'} between stops`
+  return { value: Math.round((days / 365) * 2) / 2, unit: 'year' }
+}
+
+export function formatGap(days: number): string {
+  const { value, unit } = gapAmount(days)
+  return `${value} ${unit}${value === 1 ? '' : 's'} between stops`
+}
+
+const SHORT_UNIT = { day: 'd', week: 'w', month: 'mo', year: 'y' } as const
+
+// Compact form for tight spots, e.g. "3d", "6w", "4mo", "1.5y".
+export function formatGapShort(days: number): string {
+  const { value, unit } = gapAmount(days)
+  return `${value}${SHORT_UNIT[unit]}`
 }

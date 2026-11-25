@@ -6,7 +6,7 @@ import type { DayStatsState } from '@/store/trip-store'
 import { CONDITION_ICON, ConditionIcon } from '@/components/condition-icon'
 import { Badge } from '@/components/ui/badge'
 import { classifyDay, CONDITION_LABEL, isForecastGradeWetDay, type Condition } from '@/condition'
-import { formatGap, gapDaysBetweenStops } from '@/lib/dates'
+import { formatGap, formatGapShort, gapDaysBetweenStops } from '@/lib/dates'
 import { formatPercent, formatPrecip, formatTemp } from '@/lib/units'
 import { maxOrNaN, minOrNaN, validNumbers } from '@/lib/utils'
 
@@ -371,11 +371,11 @@ function TripRangeChart({
         {gapPoints.map((gap) => (
           <span
             key={gap.index}
-            className="absolute top-0 -translate-x-1/2 text-[10px] font-medium text-muted-foreground/70"
+            className="absolute top-0 -translate-x-1/2 text-[10px] font-medium tabular-nums text-muted-foreground/70"
             style={{ left: indexToLeft(gap.index, totalDays) }}
             title={formatGap(gap.gapDays)}
           >
-            ⋯
+            {formatGapShort(gap.gapDays)}
           </span>
         ))}
         {spans.map((span, i) => (
