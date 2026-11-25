@@ -1,6 +1,8 @@
-import { Info, Monitor, Moon, Sun } from 'lucide-react'
+import { Check, Info, Monitor, Moon, Share2, Sun } from 'lucide-react'
+import { useState } from 'react'
 import { useTripStore } from '@/store/trip-store'
 import { useThemeStore, type Theme } from '@/hooks/use-theme'
+import { encodeTripToParam } from '@/lib/share-trip'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,8 +20,18 @@ const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
 ]
 
 export function Header() {
-  const { units, setUnits } = useTripStore()
+  const { units, setUnits, stops } = useTripStore()
   const { theme, setTheme } = useThemeStore()
+  const [copied, setCopied] = useState(false)
+
+  async function handleShare() {
+    const url = new URL(window.location.href)
+    url.search = ''
+    url.searchParams.set('trip', encodeTripToParam(stops, units))
+    await navigator.clipboard.writeText(url.toString())
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <header className="border-b border-border">
@@ -50,6 +62,17 @@ export function Header() {
                 °F
               </Button>
             </div>
+
+            {/* Share Button */}
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="rounded-full bg-card"
+              onClick={handleShare}
+            >
+              {copied ? <Check /> : <Share2 />}
+              <span className="sr-only">{copied ? 'Link copied' : 'Share trip'}</span>
+            </Button>
 
             {/* Theme Toggle */}
             <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
