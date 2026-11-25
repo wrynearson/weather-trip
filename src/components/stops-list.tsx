@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { ChevronDown, Trash2 } from 'lucide-react'
 import { useTripStore } from '@/store/trip-store'
 import { Button } from '@/components/ui/button'
@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { StopCard } from '@/components/stop-card'
 import { StopEditor, type StopDraft } from '@/components/stop-editor'
 import { fetchStopWeather } from '@/lib/fetch-stop-weather'
-import { addDaysISO } from '@/lib/dates'
+import { addDaysISO, formatGap, gapDaysBetweenStops } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 
 export function StopsList() {
@@ -82,8 +82,22 @@ export function StopsList() {
 
       {!collapsed && (
         <>
-          {stops.map((stop, i) => (
-            <div key={stop.id} className="flex items-start gap-3">
+          {stops.map((stop, i) => {
+            const prev = stops[i - 1]
+            const gapDays = prev ? gapDaysBetweenStops(prev, stop) : 0
+            return (
+            <Fragment key={stop.id}>
+            {gapDays > 0 && (
+              <div
+                data-slot="stop-gap"
+                className="ml-9 flex items-center gap-3 text-xs font-medium text-muted-foreground"
+              >
+                <span className="h-px flex-1 border-t border-dashed border-border" />
+                <span className="font-mono tracking-wide uppercase">{formatGap(gapDays)}</span>
+                <span className="h-px flex-1 border-t border-dashed border-border" />
+              </div>
+            )}
+            <div className="flex items-start gap-3">
               <div className="mt-4.5 flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-card font-mono text-xs text-muted-foreground">
                 {i + 1}
               </div>
@@ -101,7 +115,9 @@ export function StopsList() {
                 />
               </div>
             </div>
-          ))}
+            </Fragment>
+            )
+          })}
 
           {editingId === 'new' && (
             <div className="flex items-start gap-3">

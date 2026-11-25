@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Area, CartesianGrid, ComposedChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, CartesianGrid, ComposedChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { MouseHandlerDataParam } from 'recharts'
 import type { DayStats, Stop, Units } from '@/types'
 import type { DayStatsState } from '@/store/trip-store'
 import { CONDITION_ICON, ConditionIcon } from '@/components/condition-icon'
 import { Badge } from '@/components/ui/badge'
 import { classifyDay, CONDITION_LABEL, isForecastGradeWetDay, type Condition } from '@/condition'
+import { formatGap, gapDaysBetweenStops } from '@/lib/dates'
 import { formatPercent, formatPrecip, formatTemp } from '@/lib/units'
 import { maxOrNaN, minOrNaN, validNumbers } from '@/lib/utils'
 
@@ -24,6 +25,25 @@ type ChartDatum = DayStats & {
   recordSpan: number
 }
 
+// A single empty slot inserted between two stops that don't connect. Its
+// span values are null so recharts leaves a hole in the bands there instead
+// of drawing them straight across the unplanned time.
+type GapDatum = {
+  isGap: true
+  index: number
+  gapDays: number
+  avgSpanBase: null
+  avgSpan: null
+  recordSpanBase: null
+  recordSpan: null
+}
+
+type ChartPoint = ChartDatum | GapDatum
+
+function isGapPoint(point: ChartPoint): point is GapDatum {
+  return 'isGap' in point
+}
+
 type StopSpan = {
   stopId: string
   stopName: string
@@ -32,13 +52,29 @@ type StopSpan = {
 }
 
 function buildChartData(stops: Stop[], dayStats: Record<string, DayStatsState>) {
-  const points: ChartDatum[] = []
+  const points: ChartPoint[] = []
   const spans: StopSpan[] = []
   let index = 0
+  let prevStop: Stop | null = null
 
   for (const stop of stops) {
     const days = dayStats[stop.id]
     if (!Array.isArray(days) || days.length === 0) continue
+
+    const gapDays = prevStop ? gapDaysBetweenStops(prevStop, stop) : 0
+    if (gapDays > 0) {
+      points.push({
+        isGap: true,
+        index,
+        gapDays,
+        avgSpanBase: null,
+        avgSpan: null,
+        recordSpanBase: null,
+        recordSpan: null,
+      })
+      index += 1
+    }
+    prevStop = stop
 
     const startIndex = index
     for (const day of days) {
@@ -157,13 +193,23 @@ function computeAxisBounds(points: ChartDatum[]): { min: number; max: number } {
 // shifts the chart or anything below it.
 const ACTIVE_DETAIL_HEIGHT = 'h-17'
 
-function ChartActiveDetail({ datum, units }: { datum: ChartDatum | null; units: Units }) {
+function ChartActiveDetail({ datum, units }: { datum: ChartPoint | null; units: Units }) {
   if (!datum) {
     return (
       <div
         className={`mt-2 flex ${ACTIVE_DETAIL_HEIGHT} items-center justify-center rounded-md border border-dashed border-border px-3 text-center text-xs text-muted-foreground`}
       >
         Hover or drag the chart for day details
+      </div>
+    )
+  }
+
+  if (isGapPoint(datum)) {
+    return (
+      <div
+        className={`mt-2 flex ${ACTIVE_DETAIL_HEIGHT} items-center justify-center rounded-md border border-dashed border-border px-3 text-center text-xs text-muted-foreground`}
+      >
+        {formatGap(datum.gapDays)}
       </div>
     )
   }
@@ -211,13 +257,17 @@ function TripRangeChart({
   units: Units
 }) {
   const { points, spans, totalDays } = useMemo(() => buildChartData(stops, dayStats), [stops, dayStats])
-  const axisBounds = useMemo(() => computeAxisBounds(points), [points])
+  // Gap slots have no weather, so everything that reads temperatures or
+  // conditions works from the day points only.
+  const dayPoints = useMemo(() => points.filter((p): p is ChartDatum => !isGapPoint(p)), [points])
+  const gapPoints = useMemo(() => points.filter(isGapPoint), [points])
+  const axisBounds = useMemo(() => computeAxisBounds(dayPoints), [dayPoints])
   const axisTicks = useMemo(() => {
     const step = 10
     const count = Math.round((axisBounds.max - axisBounds.min) / step) + 1
     return Array.from({ length: count }, (_, i) => axisBounds.min + i * step)
   }, [axisBounds])
-  const conditionGroups = useMemo(() => buildConditionGroups(points), [points])
+  const conditionGroups = useMemo(() => buildConditionGroups(dayPoints), [dayPoints])
 
   const [iconRowWidth, setIconRowWidth] = useState(0)
   // A plain useEffect(() => {...}, []) would only ever attach once, on this
@@ -287,6 +337,15 @@ function TripRangeChart({
           {/* content renders nothing — the docked ChartActiveDetail row below
               replaces the floating box; the cursor line still draws here. */}
           <Tooltip content={() => null} cursor={{ stroke: 'var(--border)', strokeDasharray: '2 2' }} />
+          {gapPoints.map((gap) => (
+            <ReferenceLine
+              key={gap.index}
+              x={gap.index}
+              stroke="var(--muted-foreground)"
+              strokeOpacity={0.5}
+              strokeDasharray="3 3"
+            />
+          ))}
           <Area dataKey="recordSpanBase" stackId="record" stroke="none" fill="transparent" isAnimationActive={false} />
           <Area
             dataKey="recordSpan"
@@ -309,6 +368,16 @@ function TripRangeChart({
       </ResponsiveContainer>
 
       <div className="relative h-4">
+        {gapPoints.map((gap) => (
+          <span
+            key={gap.index}
+            className="absolute top-0 -translate-x-1/2 text-[10px] font-medium text-muted-foreground/70"
+            style={{ left: indexToLeft(gap.index, totalDays) }}
+            title={formatGap(gap.gapDays)}
+          >
+            ⋯
+          </span>
+        ))}
         {spans.map((span, i) => (
           <span
             key={span.stopId}

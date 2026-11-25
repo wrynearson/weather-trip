@@ -29,3 +29,26 @@ export function addDaysISO(date: string, days: number): string {
   dt.setUTCDate(dt.getUTCDate() + days)
   return dt.toISOString().slice(0, 10)
 }
+
+// Whole days from `from` to `to` (negative if `to` is earlier).
+export function daysBetweenISO(from: string, to: string): number {
+  return Math.round((parseISODate(to).getTime() - parseISODate(from).getTime()) / 86_400_000)
+}
+
+// Days left unplanned between the end of `stop` and the start of `next`.
+// formatDateRange treats a stop as ending start + max(1, nights), so match it.
+export function gapDaysBetweenStops(
+  stop: { startDate: string; nights: number },
+  next: { startDate: string },
+): number {
+  return daysBetweenISO(addDaysISO(stop.startDate, Math.max(1, stop.nights)), next.startDate)
+}
+
+export function formatGap(days: number): string {
+  if (days < 14) return `${days} ${days === 1 ? 'day' : 'days'} between stops`
+  if (days < 60) return `${Math.round(days / 7)} weeks between stops`
+  if (days < 335) return `${Math.round(days / 30)} months between stops`
+  // Nearest half year, so 400 days reads "1 year" and 600 days "1.5 years".
+  const years = Math.round((days / 365) * 2) / 2
+  return `${years} ${years === 1 ? 'year' : 'years'} between stops`
+}
