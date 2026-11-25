@@ -117,7 +117,7 @@ describe('getDayStats forecast/historical boundary', () => {
     const result = await getDayStats(stop)
     const byDate = new Map(result.map((day) => [day.date, day]))
 
-    expect(byDate.get('2024-03-14')?.source).toBe('historical') // past
+    expect(byDate.get('2024-03-14')?.source).toBe('observed') // past (yesterday)
     expect(byDate.get('2024-03-15')?.source).toBe('forecast') // today
     expect(byDate.get('2024-03-29')?.source).toBe('forecast') // day 14
     expect(byDate.get('2024-03-30')?.source).toBe('historical') // day 15 — ticket 010
@@ -177,5 +177,63 @@ describe('getDayStats forecast/historical boundary', () => {
 
     expect(day15?.source).toBe('historical')
     expect(day15?.avgHigh).toBe(18) // from the historical mock, not NaN from the null forecast index
+  })
+})
+
+describe('getDayStats observed past dates (issue 30)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(FIXED_NOW)
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.clearAllMocks()
+  })
+
+  const stop: Stop = {
+    id: 'past-stop',
+    city: 'Test City',
+    region: 'Test Region',
+    lat: 10,
+    lon: 20,
+    startDate: '2024-03-10',
+    nights: 3, // 03-10..03-12, all in the past
+  }
+
+  it('returns observed actuals alongside the normal, and today is not observed', async () => {
+    const dates = dateRange('2024-03-10', 3)
+    vi.mocked(fetchDailySeriesCached).mockResolvedValue({
+      time: dates,
+      tMax: [25, 26, 27],
+      tMin: [15, 16, 17],
+      precip: [0, 4, 0],
+      precipProbabilityMax: [],
+      weatherCode: [1, 61, 1],
+      elevationM: 5,
+    })
+
+    const result = await getDayStats(stop)
+    expect(result.map((d) => d.source)).toEqual(['observed', 'observed', 'observed'])
+    expect(result[1]).toMatchObject({ actualHigh: 26, actualLow: 16, actualPrecip: 4, weatherCode: 61 })
+
+    const today = await getDayStats({ ...stop, startDate: '2024-03-15', nights: 1 })
+    expect(today[0].source).toBe('forecast')
+  })
+
+  it('falls back to historical when the observed fetch fails', async () => {
+    vi.mocked(fetchDailySeriesCached).mockImplementation(async (url) => {
+      if (url.searchParams.get('start_date') === '1991-01-01') {
+        const dates = ['1995-03-10', '1995-03-11', '1995-03-12']
+        return { time: dates, tMax: [20, 20, 20], tMin: [10, 10, 10], precip: [0, 0, 0], precipProbabilityMax: [], weatherCode: [1, 1, 1], elevationM: 5 }
+      }
+      throw new Error('archive down')
+    })
+
+    // Different location than above: the in-memory series caches are keyed by
+    // lat/lon (+ range) and persist across tests.
+    const result = await getDayStats({ ...stop, lat: 30, lon: 40 })
+    expect(result.map((d) => d.source)).toEqual(['historical', 'historical', 'historical'])
+    expect(result[0].actualHigh).toBeUndefined()
   })
 })
