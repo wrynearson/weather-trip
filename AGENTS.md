@@ -30,18 +30,22 @@ Client-only React app, no backend. Zustand (`src/store/trip-store.ts`) holds tri
 `merge`/`migrate` hooks) rather than trusting it — extend that validation if you add fields
 to `Stop`.
 
-**Forecast vs. historical split** (`src/forecast.ts`, `getDayStats`): each night of a stop is
-routed independently based on `daysUntil(date)`:
+**Observed / forecast / historical split** (`src/forecast.ts`, `getDayStats`): each night of a
+stop is routed independently based on `daysUntil(date)`:
+- `< 0` (past) → `source: 'observed'`: actual daily values from the Open-Meteo archive for the
+  stop's date range (`src/observed.ts`, cache key includes the range), merged with the 30-year
+  normal. Actuals live in `actualHigh/actualLow/actualPrecip`; `avgHigh/avgLow/...` hold the
+  normal. If the observed fetch fails, past days fall back to `source: 'historical'`.
 - `0..FORECAST_THRESHOLD_DAYS` (currently 14) → Open-Meteo forecast API (`fetchForecastSeries`)
-- everything else, including past dates → Open-Meteo's 1991-2020 archive, pooled ±3 calendar
-  days across all years (`src/climatology.ts`)
+- further future → Open-Meteo's 1991-2020 archive, pooled ±3 calendar days across all years
+  (`src/climatology.ts`)
 
 `FORECAST_THRESHOLD_DAYS` is 14, not `FORECAST_DAYS - 1` (15), on purpose: Open-Meteo returns
 every daily field as `null` for the last day of any `forecast_days` window (it never gets a
 full 24h of hourly source data), and `forecast_days` caps at 16 with no buffer day available.
 Don't "fix" this by raising the threshold back to 15 — that reintroduces the day showing "No
 data". A long stay can straddle the boundary, so a single stop's `DayStats[]` can mix
-`source: 'forecast'` and `source: 'historical'` days.
+all three sources.
 
 **Fetch versioning**: `fetchStopWeather` (`src/lib/fetch-stop-weather.ts`) calls
 `beginFetch(id)`/`commitDayStats(id, version, state)` on the store rather than setting

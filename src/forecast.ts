@@ -1,5 +1,6 @@
 import type { DayStats, Stop } from '@/types'
 import { getHistoricalDayStats, getHistoricalRecordRanges, type RecordRange } from './climatology'
+import { getObservedDayStats } from './observed'
 import { cacheKey, fetchDailySeriesCached, type DailySeries } from './open-meteo'
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
@@ -52,28 +53,33 @@ export function fetchForecastSeries(lat: number, lon: number): Promise<DailySeri
 }
 
 /**
- * Decides forecast vs. historical per night, from each night's own date vs.
+ * Decides observed / forecast / historical per night, from each night's own date vs.
  * today — a long stay can straddle the 15-day threshold, with early nights
  * forecast and later nights falling back to historical.
  */
 export async function getDayStats(stop: Stop): Promise<DayStats[]> {
   const dates = stopDates(stop)
+  const pastDates = dates.filter((date) => daysUntil(date) < 0)
   const forecastDates = dates.filter((date) => daysUntil(date) >= 0 && daysUntil(date) <= FORECAST_THRESHOLD_DAYS)
-  const historicalDates = dates.filter((date) => daysUntil(date) < 0 || daysUntil(date) > FORECAST_THRESHOLD_DAYS)
+  const futureDates = dates.filter((date) => daysUntil(date) > FORECAST_THRESHOLD_DAYS)
 
-  if (historicalDates.length === 0) {
-    return getForecastDayStats(stop.lat, stop.lon, dates)
-  }
-  if (forecastDates.length === 0) {
-    return getHistoricalDayStats(stop.lat, stop.lon, dates)
-  }
-
-  const [forecastStats, historicalStats] = await Promise.all([
-    getForecastDayStats(stop.lat, stop.lon, forecastDates),
-    getHistoricalDayStats(stop.lat, stop.lon, historicalDates),
+  const [pastStats, forecastStats, futureStats] = await Promise.all([
+    pastDates.length ? getPastDayStats(stop.lat, stop.lon, pastDates) : [],
+    forecastDates.length ? getForecastDayStats(stop.lat, stop.lon, forecastDates) : [],
+    futureDates.length ? getHistoricalDayStats(stop.lat, stop.lon, futureDates) : [],
   ])
-  const byDate = new Map([...forecastStats, ...historicalStats].map((day) => [day.date, day]))
+  const byDate = new Map([...pastStats, ...forecastStats, ...futureStats].map((day) => [day.date, day]))
   return dates.map((date) => byDate.get(date)!)
+}
+
+// Observed values when the archive has them; if that fetch fails, fall back
+// to the 30-year average (the pre-observed behavior) rather than erroring.
+async function getPastDayStats(lat: number, lon: number, dates: string[]): Promise<DayStats[]> {
+  try {
+    return await getObservedDayStats(lat, lon, dates)
+  } catch {
+    return getHistoricalDayStats(lat, lon, dates)
+  }
 }
 
 async function getForecastDayStats(lat: number, lon: number, dates: string[]): Promise<DayStats[]> {

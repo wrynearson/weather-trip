@@ -33,3 +33,25 @@ export function formatPrecip(mm: number, units: Units): string {
 export function formatPercent(fraction: number): string {
   return Number.isNaN(fraction) ? '—' : `${Math.round(fraction * 100)}%`
 }
+
+function signed(n: number, text: string): string {
+  return n > 0 ? `+${text}` : n < 0 ? `-${text}` : `±${text}`
+}
+
+// A temperature *difference* — scaled for °F but without the +32 offset that
+// celsiusToDisplay applies to absolute temperatures.
+export function formatTempDelta(deltaCelsius: number, units: Units): string {
+  if (Number.isNaN(deltaCelsius)) return '—'
+  const value = Math.round(units === 'F' ? (deltaCelsius * 9) / 5 : deltaCelsius)
+  return `${signed(value, String(Math.abs(value)))}°${units}`
+}
+
+export function formatPrecipDelta(deltaMm: number, units: Units): string {
+  if (Number.isNaN(deltaMm)) return '—'
+  if (units === 'F') {
+    const inches = Math.round((deltaMm / MM_PER_INCH) * 100) / 100
+    return signed(inches, `${Math.abs(inches).toFixed(2)}"`)
+  }
+  const mm = Math.round(deltaMm)
+  return signed(mm, `${Math.abs(mm)}mm`)
+}

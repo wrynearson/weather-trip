@@ -2,8 +2,7 @@ import { Suspense } from 'react'
 import { useTripStore } from '@/store/trip-store'
 import { Card, CardContent } from '@/components/ui/card'
 import { ChartLegend, TripRangeChart, shouldShowTripRangeChart } from '@/components/trip-range-chart'
-import { ConditionIcon } from '@/components/condition-icon'
-import { CONDITION_LABEL, rankConditions } from '@/condition'
+import { ConditionIconGroups } from '@/components/condition-icon'
 import { formatTemp } from '@/lib/units'
 import { maxOrNaN, minOrNaN, validNumbers } from '@/lib/utils'
 import type { DayStats } from '@/types'
@@ -18,7 +17,6 @@ export function TripSummaryCard() {
 
   if (allDays.length === 0) return null
 
-  const topConditions = rankConditions(allDays)
   const low = minOrNaN(validNumbers(allDays.map((day) => day.avgLow)))
   const high = maxOrNaN(validNumbers(allDays.map((day) => day.avgHigh)))
 
@@ -27,15 +25,7 @@ export function TripSummaryCard() {
       <CardContent>
         <div className="relative flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="flex flex-wrap items-center gap-4">
-            <span className="flex items-center gap-1">
-              {topConditions.map(({ condition, frequency }) => (
-                <ConditionIcon
-                  key={condition}
-                  condition={condition}
-                  title={`${CONDITION_LABEL[condition]} · ${Math.round(frequency * 100)}%`}
-                />
-              ))}
-            </span>
+            <ConditionIconGroups days={allDays} />
             <div className="flex items-baseline gap-1.5 text-sm whitespace-nowrap">
               <span className="text-muted-foreground">Trip low</span>
               <span className="font-mono font-medium">{formatTemp(low, units)}</span>
@@ -50,7 +40,7 @@ export function TripSummaryCard() {
             {stops.length === 1 ? 'stop' : 'stops'}
           </div>
           <div className="shrink-0 self-end sm:self-auto">
-            {shouldShowTripRangeChart(stops, dayStats) && <ChartLegend />}
+            {shouldShowTripRangeChart(stops, dayStats) && <ChartLegend showActual={allDays.some((d) => d.source === 'observed')} />}
           </div>
         </div>
         <Suspense fallback={null}>

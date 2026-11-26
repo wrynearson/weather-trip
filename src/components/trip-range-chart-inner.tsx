@@ -22,6 +22,8 @@ type ChartDatum = DayStats & {
   avgSpan: number
   recordSpanBase: number
   recordSpan: number
+  actualSpanBase?: number
+  actualSpan?: number
 }
 
 type StopSpan = {
@@ -50,6 +52,8 @@ function buildChartData(stops: Stop[], dayStats: Record<string, DayStatsState>) 
         avgSpan: day.avgHigh - day.avgLow,
         recordSpanBase: day.recordLow,
         recordSpan: day.recordHigh - day.recordLow,
+        actualSpanBase: day.actualLow,
+        actualSpan: day.actualHigh != null && day.actualLow != null ? day.actualHigh - day.actualLow : undefined,
       })
       index += 1
     }
@@ -69,6 +73,9 @@ type ConditionGroup = {
   condition: Condition
   startIndex: number
   endIndex: number
+  // Actual (observed) days get teal icons; a group never mixes actual and
+  // non-actual days, so the color always lines up with the band below it.
+  actual: boolean
 }
 
 // Collapses consecutive days that render the same icon into a single group,
@@ -82,11 +89,12 @@ function buildConditionGroups(points: ChartDatum[]): ConditionGroup[] {
   for (const point of points) {
     const condition = classifyDay(point)
     const icon = CONDITION_ICON[condition]
+    const actual = point.source === 'observed'
     const last = groups[groups.length - 1]
-    if (last && CONDITION_ICON[last.condition] === icon && last.endIndex === point.index - 1) {
+    if (last && last.actual === actual && CONDITION_ICON[last.condition] === icon && last.endIndex === point.index - 1) {
       last.endIndex = point.index
     } else {
-      groups.push({ condition, startIndex: point.index, endIndex: point.index })
+      groups.push({ condition, startIndex: point.index, endIndex: point.index, actual })
     }
   }
   return groups
@@ -142,8 +150,16 @@ function thinConditionGroups(groups: ConditionGroup[], totalDays: number, width:
 // 30-year record high for that date, and the axis needs to stretch to fit it
 // rather than clipping the avg-range area.
 function computeAxisBounds(points: ChartDatum[]): { min: number; max: number } {
-  const lows = validNumbers([...points.map((p) => p.recordLow), ...points.map((p) => p.avgLow)])
-  const highs = validNumbers([...points.map((p) => p.recordHigh), ...points.map((p) => p.avgHigh)])
+  const lows = validNumbers([
+    ...points.map((p) => p.recordLow),
+    ...points.map((p) => p.avgLow),
+    ...points.map((p) => p.actualLow ?? NaN),
+  ])
+  const highs = validNumbers([
+    ...points.map((p) => p.recordHigh),
+    ...points.map((p) => p.avgHigh),
+    ...points.map((p) => p.actualHigh ?? NaN),
+  ])
   if (lows.length === 0 || highs.length === 0) return { min: 0, max: 10 }
   const min = Math.floor(minOrNaN(lows) / 10) * 10
   const max = Math.ceil(maxOrNaN(highs) / 10) * 10
@@ -155,7 +171,7 @@ function computeAxisBounds(points: ChartDatum[]): { min: number; max: number } {
 // especially bad on the narrow, short viewports scrubbing happens on most).
 // Both states share one fixed height so scrubbing starting/stopping never
 // shifts the chart or anything below it.
-const ACTIVE_DETAIL_HEIGHT = 'h-17'
+const ACTIVE_DETAIL_HEIGHT = 'h-23'
 
 function ChartActiveDetail({ datum, units }: { datum: ChartDatum | null; units: Units }) {
   if (!datum) {
@@ -169,11 +185,12 @@ function ChartActiveDetail({ datum, units }: { datum: ChartDatum | null; units: 
   }
 
   const condition = classifyDay(datum)
-  const wetLabel = isForecastGradeWetDay(datum.source === 'forecast', datum.source === 'historical')
+  const isObserved = datum.source === 'observed'
+  const wetLabel = isForecastGradeWetDay(datum.source === 'forecast', datum.source !== 'forecast')
     ? 'precip chance'
     : 'historically wet'
-  const precipSuffix = datum.source === 'historical' ? 'avg' : 'total'
-  const rangeSuffix = datum.source === 'historical' ? 'avg' : 'forecast'
+  const precipSuffix = datum.source === 'forecast' ? 'total' : 'avg'
+  const rangeSuffix = datum.source === 'forecast' ? 'forecast' : 'avg'
   const rangeLine = `${formatTemp(datum.avgLow, units)}–${formatTemp(datum.avgHigh, units)} ${rangeSuffix} · ${formatTemp(datum.recordLow, units)}–${formatTemp(datum.recordHigh, units)} record`
   const precipLine = `${formatPercent(datum.wetDayProbability)} ${wetLabel} · ${formatPrecip(datum.precipMean, units)} ${precipSuffix}`
 
@@ -185,16 +202,25 @@ function ChartActiveDetail({ datum, units }: { datum: ChartDatum | null; units: 
         <div className="flex min-w-0 items-center gap-1.5">
           <span className="truncate text-xs font-semibold">{datum.stopName}</span>
           <span className="shrink-0 text-[10px] text-muted-foreground">{datum.date}</span>
-          <ConditionIcon condition={condition} className="size-3.5 shrink-0" title={CONDITION_LABEL[condition]} />
+          <ConditionIcon condition={condition} className={isObserved ? 'size-3.5 shrink-0 text-primary' : 'size-3.5 shrink-0'} title={CONDITION_LABEL[condition]} />
         </div>
-        <Badge variant={datum.source === 'forecast' ? 'default' : 'secondary'} className="shrink-0 text-[9px]">
-          {datum.source === 'forecast' ? 'Forecast' : 'Historical'}
+        <Badge
+          variant={isObserved ? 'default' : datum.source === 'forecast' ? 'outline' : 'secondary'}
+          className="shrink-0 text-[9px]"
+        >
+          {isObserved ? 'Actual' : datum.source === 'forecast' ? 'Forecast' : 'Historical'}
         </Badge>
       </div>
       {/* Same 30-year record band regardless of source — forecast days
           reuse it too, see climatology.ts getHistoricalRecordRanges. Two
           dedicated rows (not flex-wrap) so both precip variables always
           show in full instead of getting wrapped or truncated away. */}
+      {isObserved && (
+        <div className="truncate font-mono text-[10px] text-foreground">
+          {formatTemp(datum.actualLow!, units)}–{formatTemp(datum.actualHigh!, units)} actual ·{' '}
+          {formatPrecip(datum.actualPrecip!, units)} rain
+        </div>
+      )}
       <div className="truncate font-mono text-[10px] text-muted-foreground">{rangeLine}</div>
       <div className="truncate font-mono text-[10px] text-muted-foreground">{precipLine}</div>
     </div>
@@ -260,7 +286,7 @@ function TripRangeChart({
             className="absolute top-0 -translate-x-1/2"
             style={{ left: indexToLeft((group.startIndex + group.endIndex) / 2, totalDays) }}
           >
-            <ConditionIcon condition={group.condition} className="size-3.5" />
+            <ConditionIcon condition={group.condition} className={group.actual ? 'size-3.5 text-primary' : 'size-3.5'} />
           </span>
         ))}
       </div>
@@ -303,6 +329,17 @@ function TripRangeChart({
             stroke="none"
             fill="var(--muted-foreground)"
             fillOpacity={0.28}
+            isAnimationActive={false}
+          />
+          {/* Actual observed high-low range for past days; undefined
+              elsewhere, so the band only draws over the observed stretch. */}
+          <Area dataKey="actualSpanBase" stackId="actual" stroke="none" fill="transparent" isAnimationActive={false} />
+          <Area
+            dataKey="actualSpan"
+            stackId="actual"
+            stroke="none"
+            fill="var(--primary)"
+            fillOpacity={0.45}
             isAnimationActive={false}
           />
         </ComposedChart>

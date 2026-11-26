@@ -17,7 +17,7 @@ export function shouldShowTripRangeChart(stops: Stop[], dayStats: Record<string,
   return totalDays >= 2
 }
 
-export function ChartLegend() {
+export function ChartLegend({ showActual = false }: { showActual?: boolean }) {
   return (
     <div className="flex items-center gap-3 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
       <span className="flex items-center gap-1" title="Historical range">
@@ -28,6 +28,12 @@ export function ChartLegend() {
         <span className="inline-block size-1.5 rounded-sm bg-muted-foreground/60" />
         <span className="hidden sm:inline">avg min/max</span>
       </span>
+      {showActual && (
+        <span className="flex items-center gap-1" title="Actual high–low range">
+          <span className="inline-block size-1.5 rounded-sm bg-primary/60" />
+          <span className="hidden sm:inline">actual</span>
+        </span>
+      )}
     </div>
   )
 }
